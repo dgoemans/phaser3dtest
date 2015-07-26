@@ -1,5 +1,5 @@
-# awesomegame
+# Phaser3D
 
 ## install instructions
-- npm install bower --save-dev
+- npm install
 - bower install requirejs
