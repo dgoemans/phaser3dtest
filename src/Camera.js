@@ -1,5 +1,5 @@
-define(["Phaser", "Syl"],
-    function(Phaser, Syl)
+define(["Phaser", "Sylvester"],
+    function(Phaser, Sylvester)
     {
         var Camera = function ()
         {
@@ -17,10 +17,11 @@ define(["Phaser", "Syl"],
 
         Camera.prototype.createPerspectiveMatrix = function()
         {
-            var ar = game.width/game.height;
+            var aspect = game.width/game.height;
             var zNear = 1;
             var zFar = 1000;
-            this.makePerspective(this.fov, ar, zNear, zFar);
+            this.makePerspective(this.fov, aspect, zNear, zFar);
+            //this.projectionMatrix = Matrix.PerspectiveFovLH(this.fov, aspect, zNear, zFar);
 
             this.projectionMatrix.transpose();
         };
@@ -34,20 +35,21 @@ define(["Phaser", "Syl"],
 
         };
 
-        Camera.prototype.setPosition = function(x,y,z)
+        Camera.prototype.setPosition = function(vec)
         {
-            if(y === undefined && z === undefined)
-            {
-                y = x.elements[1];
-                z = x.elements[2];
-                x = x.elements[0];
-            }
-            this.viewMatrix.elements[0][3] = x;
-            this.viewMatrix.elements[1][3] = y;
-            this.viewMatrix.elements[2][3] = z;
+            this.viewMatrix.setPosition(vec);
+            //this.viewMatrix.elements[0][3] = vec.elements[0];
+            //this.viewMatrix.elements[1][3] = vec.elements[1];
+            //this.viewMatrix.elements[2][3] = vec.elements[2];
 
             this.updateMatrix();
         };
+
+        Camera.prototype.getPosition = function(vec)
+        {
+            return this.viewMatrix.getPosition();
+        };
+
 
         Camera.prototype.makeFrustum = function ( left, right, bottom, top, near, far ) {
 

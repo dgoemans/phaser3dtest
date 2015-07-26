@@ -5,9 +5,11 @@ requirejs.config({
     baseUrl: 'src',
     paths: {
         Phaser: '../lib/phaser',
-        Syl: '../lib/sylvester'
+        Sylvester: '../lib/sylvester'
     }
 });
+
+require(["Sylvester", "sylvester_tweaks"]);
 
 require(["Phaser",
         "Camera",
@@ -22,6 +24,8 @@ function(Phaser, Camera, Model)
 
     var leftDown = false;
     var rightDown = false;
+
+    var models = [];
 
     var cameraPos;
 
@@ -47,13 +51,67 @@ function(Phaser, Camera, Model)
 
         cursors = game.input.keyboard.createCursorKeys();
 
-        cameraPos = Vector.Zero(3);
+        cameraPos = Vector.create([0,0,120]);
 
         camera = Camera.getInstance();
         //camera.setPosition(0,10,0);
         //camera.lookAt(Vector.create([0,10,0]), Vector.create([0,10,-10]));
 
-        model = new Model();
+        var vertices = [];
+        vertices.push(Vector.create([10, 10, -10]));
+        vertices.push(Vector.create([10, 10, 10]));
+        vertices.push(Vector.create([10, -10, 10]));
+        vertices.push(Vector.create([10, -10, -10]));
+        model = new Model(vertices);
+        models.push(model);
+
+        var vertices = [];
+        vertices.push(Vector.create([-10, 10, -10]));
+        vertices.push(Vector.create([-10, -10, -10]));
+        vertices.push(Vector.create([10, -10, -10]));
+        vertices.push(Vector.create([10, 10, -10]));
+        model = new Model(vertices);
+        models.push(model);
+
+        var vertices = [];
+        vertices.push(Vector.create([-10, -10, 10]));
+        vertices.push(Vector.create([-10, -10, -10]));
+        vertices.push(Vector.create([10, -10, -10]));
+        vertices.push(Vector.create([10, -10, 10]));
+        model = new Model(vertices);
+        models.push(model);
+
+        var vertices = [];
+        vertices.push(Vector.create([-10, -10, 10]));
+        vertices.push(Vector.create([-10, -10, -10]));
+        vertices.push(Vector.create([10, -10, -10]));
+        vertices.push(Vector.create([10, -10, 10]));
+        model = new Model(vertices);
+        models.push(model);
+
+        var vertices = [];
+        vertices.push(Vector.create([-10, 10, 10]));
+        vertices.push(Vector.create([-10, 10, -10]));
+        vertices.push(Vector.create([10, 10, -10]));
+        vertices.push(Vector.create([10, 10, 10]));
+        model = new Model(vertices);
+        models.push(model);
+
+        var vertices = [];
+        vertices.push(Vector.create([-10, 10, -10]));
+        vertices.push(Vector.create([-10, 10, 10]));
+        vertices.push(Vector.create([-10, -10, 10]));
+        vertices.push(Vector.create([-10, -10, -10]));
+        model = new Model(vertices);
+        models.push(model);
+
+        var vertices = [];
+        vertices.push(Vector.create([-10, 10, 10]));
+        vertices.push(Vector.create([-10, -10, 10]));
+        vertices.push(Vector.create([10, -10, 10]));
+        vertices.push(Vector.create([10, 10, 10]));
+        model = new Model(vertices);
+        models.push(model);
 
         var controls = document.getElementById('mobile-controls');
         if(isMobileOrTablet())
@@ -97,23 +155,47 @@ function(Phaser, Camera, Model)
         }
         else if(cursors.up.isDown)
         {
-            cameraPos.elements[1] += 0.5;
+            cameraPos.elements[2] += 0.5;
         }
         else if(cursors.down.isDown)
         {
-            cameraPos.elements[1] -= 0.5;
+            cameraPos.elements[2] -= 0.5;
         }
 
-        cameraPos.elements[2] = 100;
-        camera.lookAt(cameraPos, Vector.create([0,0,0]));
+        cameraPos.elements[1] = 0;
+
+
+        camera.lookAt(cameraPos, Vector.create([cameraPos.elements[0],cameraPos.elements[1],cameraPos.elements[2]+10]));
+
+        models.forEach(function(model){
+            model.update();
+        });
+
+
+        models.forEach(function(model){
+            var t = game.time.elapsed/500;
+            model.setRotation(Vector.create([t,t,0]));
+        });
 
         camera.update();
-        model.update();
     }
 
     function render()
     {
-        model.render();
+        models.sort(function(a,b){
+            var aPos = a.getPosition();
+            var bPos = b.getPosition();
+            var camPos = Camera.getInstance().getPosition();
+
+            var aDist = aPos.distanceFrom(camPos);
+            var bDist = bPos.distanceFrom(camPos);
+
+            return aDist - bDist;
+        });
+
+        models.forEach(function(model){
+            model.render();
+        });
     }
 
     function isMobileOrTablet() {
