@@ -7,6 +7,8 @@ define(["Phaser","Camera"],
             this.graphics = game.add.graphics(0,0);
 
             this.vertices = vertices;
+            //this.baseColor = [200 + Math.random()*55, 100 + Math.random()*155, 100 + Math.random()*155];
+            this.baseColor = [255,0,0];
             this.updateGeometry();
         };
 
@@ -46,16 +48,19 @@ define(["Phaser","Camera"],
             return vec4;
         };
 
+        Phaser.Color.toRGB = function (r, g, b) {
+
+            return (r << 16) | (g << 8) | b;
+
+        };
+
+
         Model.prototype.updateGeometry = function() {
 
-            var pos = this.getPosition();
-            var camPos = Camera.getInstance().getPosition();
-
-            var dist = pos.distanceFrom(camPos);
-
             this.graphics.clear();
-            //this.graphics.lineStyle(2, 0x0000FF, 1);
-            this.graphics.beginFill(0xFF3300, 1);
+            //this.graphics.lineStyle(1, 0x0000FF, 1);
+
+            this.graphics.beginFill(0xFF0000, 1);
 
             var pos = this.vector3to4(this.vertices[0]);
             pos = this.matrix.multiply(pos);
@@ -63,19 +68,30 @@ define(["Phaser","Camera"],
             pos = this.normalizeProjectedVector(pos);
 
             this.graphics.moveTo(pos.elements[0],pos.elements[1]);
+            var lightPos = Vector.create([20,20,30]);
+            var length = lightPos.modulus() + 0;
 
             for(var i=1; i<=this.vertices.length; i++)
             {
                 pos = this.vector3to4(this.vertices[i%this.vertices.length]);
                 pos = this.matrix.multiply(pos);
+                var dist = pos.distanceFrom(this.vector3to4(lightPos));
                 pos = Camera.getInstance().matrix.multiply(pos);
-
-                var origString = "(" + pos.elements[0].toFixed(1) + ", " + pos.elements[1].toFixed(1) + ", " + pos.elements[2].toFixed(1) + ")";
+                //var origString = "(" + pos.elements[0].toFixed(1) + ", " + pos.elements[1].toFixed(1) + ", " + pos.elements[2].toFixed(1) + ")";
                 pos = this.normalizeProjectedVector(pos);
 
+                var color = this.baseColor.clone();
+                for(var j=0; j<color.length; j++)
+                {
+                    color[j] = color[j]*0.7 + color[j]*0.3*(1 - dist/length*dist/length);
+                }
+
+                var vColor = Phaser.Color.toRGB(color[0], color[1], color[2]);
+                this.graphics.beginFill(vColor, 1);
                 this.graphics.lineTo(pos.elements[0],pos.elements[1]);
 
-                var transformedString = "(" + pos.elements[0].toFixed(1) + ", " + pos.elements[1].toFixed(1) + ", " + pos.elements[2].toFixed(1) + ")";
+
+                //var transformedString = "(" + pos.elements[0].toFixed(1) + ", " + pos.elements[1].toFixed(1) + ", " + pos.elements[2].toFixed(1) + ")";
                 //console.log("Orig: " + origString + "  |  Trans: " + transformedString);
             }
 
@@ -84,18 +100,6 @@ define(["Phaser","Camera"],
 
         Model.prototype.update = function ()
         {
-            return;
-            var t = game.time.elapsed/500;
-            var rotation = Matrix.Rotation4Y(t);
-            this.matrix = this.matrix.multiply(rotation);
-
-            return;
-            var t = game.time.elapsed/500;
-            var rotation = Matrix.Rotation4Z(t);
-            this.matrix = this.matrix.multiply(rotation);
-
-
-            //this.matrix.setPosition(Vector.create([0,Math.sin(game.time.totalElapsedSeconds())*5,0]))
         };
 
         Model.prototype.render = function()

@@ -9,6 +9,11 @@ requirejs.config({
     }
 });
 
+
+Array.prototype.clone = function() {
+    return this.slice(0);
+};
+
 require(["Sylvester", "sylvester_tweaks"]);
 
 require(["Phaser",
@@ -24,6 +29,9 @@ function(Phaser, Camera, Model)
 
     var leftDown = false;
     var rightDown = false;
+
+    var cameraAngle = 0;
+    var cameraDist = 100;
 
     var models = [];
 
@@ -82,14 +90,6 @@ function(Phaser, Camera, Model)
         models.push(model);
 
         var vertices = [];
-        vertices.push(Vector.create([-10, -10, 10]));
-        vertices.push(Vector.create([-10, -10, -10]));
-        vertices.push(Vector.create([10, -10, -10]));
-        vertices.push(Vector.create([10, -10, 10]));
-        model = new Model(vertices);
-        models.push(model);
-
-        var vertices = [];
         vertices.push(Vector.create([-10, 10, 10]));
         vertices.push(Vector.create([-10, 10, -10]));
         vertices.push(Vector.create([10, 10, -10]));
@@ -113,25 +113,11 @@ function(Phaser, Camera, Model)
         model = new Model(vertices);
         models.push(model);
 
-        var controls = document.getElementById('mobile-controls');
-        if(isMobileOrTablet())
-        {
-            player.autoDrive = true;
+        models.forEach(function(model){
+            model.setRotation(Vector.create([Math.PI/4,Math.PI/4,0]));
+        });
 
-            var left = document.getElementById('left');
-            left.addEventListener('touchstart', function(e){leftDown = true;e.preventDefault();});
-            left.addEventListener('touchend', function(e){leftDown = false;e.preventDefault();});
-            var right = document.getElementById('right');
-            right.addEventListener('touchstart', function(e){rightDown = true;e.preventDefault();});
-            right.addEventListener('touchend', function(e){rightDown = false;e.preventDefault();});
-
-        }
-        else
-        {
-            controls.style.display = "none";
-        }
-
-        var graphics = game.add.graphics(0,0);
+        /*var graphics = game.add.graphics(0,0);
         graphics.beginFill(0x333333);
 
         graphics.moveTo(5,-5);
@@ -140,42 +126,48 @@ function(Phaser, Camera, Model)
         graphics.lineTo(5,5);
         graphics.lineTo(5,-5);
 
-        graphics.endFill();
+        graphics.endFill();*/
     }
 
     function update()
     {
         if(cursors.right.isDown)
         {
-            cameraPos.elements[0] += 0.5;
+            cameraAngle += 0.03;
         }
         else if(cursors.left.isDown)
         {
-            cameraPos.elements[0] -= 0.5;
+            cameraAngle -= 0.03;
         }
         else if(cursors.up.isDown)
         {
-            cameraPos.elements[2] += 0.5;
+            cameraDist += 0.5;
         }
         else if(cursors.down.isDown)
         {
-            cameraPos.elements[2] -= 0.5;
+            cameraDist -= 0.5;
         }
 
+        var x = Math.cos(cameraAngle)*cameraDist;
+        var y = Math.sin(cameraAngle)*cameraDist;
+
+        cameraPos.elements[0] = y;
         cameraPos.elements[1] = 0;
+        cameraPos.elements[2] = x;
 
 
-        camera.lookAt(cameraPos, Vector.create([cameraPos.elements[0],cameraPos.elements[1],cameraPos.elements[2]+10]));
+        //camera.lookAt(cameraPos, Vector.create([cameraPos.elements[0],cameraPos.elements[1],cameraPos.elements[2]+10]));
+        camera.lookAt(cameraPos, Vector.create([0,0,0]));
 
         models.forEach(function(model){
             model.update();
         });
 
 
-        models.forEach(function(model){
-            var t = game.time.elapsed/500;
-            model.setRotation(Vector.create([t,t,0]));
-        });
+        /*models.forEach(function(model){
+            var t = game.time.elapsed/1000;
+            model.setRotation(Vector.create([t/2,t,t/4]));
+        });*/
 
         camera.update();
     }
@@ -205,3 +197,4 @@ function(Phaser, Camera, Model)
     }
 
 });
+
