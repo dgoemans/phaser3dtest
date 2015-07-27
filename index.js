@@ -70,10 +70,36 @@ function(Phaser, Camera, Model)
         vertices.push(Vector.create([10, 10, 10]));
         vertices.push(Vector.create([10, -10, 10]));
         vertices.push(Vector.create([10, -10, -10]));
-        model = new Model(vertices);
+
+        vertices.push(Vector.create([-10, 10, -10]));
+        vertices.push(Vector.create([-10, -10, -10]));
+        vertices.push(Vector.create([10, -10, -10]));
+        vertices.push(Vector.create([10, 10, -10]));
+
+        vertices.push(Vector.create([-10, -10, 10]));
+        vertices.push(Vector.create([-10, -10, -10]));
+        vertices.push(Vector.create([10, -10, -10]));
+        vertices.push(Vector.create([10, -10, 10]));
+
+        vertices.push(Vector.create([-10, 10, 10]));
+        vertices.push(Vector.create([-10, 10, -10]));
+        vertices.push(Vector.create([10, 10, -10]));
+        vertices.push(Vector.create([10, 10, 10]));
+
+        vertices.push(Vector.create([-10, 10, -10]));
+        vertices.push(Vector.create([-10, 10, 10]));
+        vertices.push(Vector.create([-10, -10, 10]));
+        vertices.push(Vector.create([-10, -10, -10]));
+
+        vertices.push(Vector.create([-10, 10, 10]));
+        vertices.push(Vector.create([-10, -10, 10]));
+        vertices.push(Vector.create([10, -10, 10]));
+        vertices.push(Vector.create([10, 10, 10]));
+
+        model = new Model(vertices, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]);
         models.push(model);
 
-        var vertices = [];
+        /*var vertices = [];
         vertices.push(Vector.create([-10, 10, -10]));
         vertices.push(Vector.create([-10, -10, -10]));
         vertices.push(Vector.create([10, -10, -10]));
@@ -111,7 +137,7 @@ function(Phaser, Camera, Model)
         vertices.push(Vector.create([10, -10, 10]));
         vertices.push(Vector.create([10, 10, 10]));
         model = new Model(vertices);
-        models.push(model);
+        models.push(model);*/
 
         models.forEach(function(model){
             model.setRotation(Vector.create([Math.PI/4,Math.PI/4,0]));
