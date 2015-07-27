@@ -91,7 +91,7 @@ define(["Phaser", "Camera"],
                 var aDist = aAvg.distanceFrom(camPos);
                 var bDist = bAvg.distanceFrom(camPos);
 
-                return bDist - aDist;
+                return aDist - bDist;
             });
         };
 
