@@ -17,12 +17,13 @@ Array.prototype.clone = function() {
 require(["Sylvester", "sylvester_tweaks"]);
 
 require(["Phaser",
-        "Camera",
-        "Model"],
+    "Camera",
+    "Model",
+    "Geometry"],
 function(Phaser, Camera, Model)
 {
     var gameElt = document.getElementById('game');
-    game = new Phaser.Game(gameElt.clientWidth, gameElt.clientHeight, Phaser.AUTO, 'game', { preload: preload, create: create, update: update, render: render });
+    game = new Phaser.Game(gameElt.clientWidth, gameElt.clientHeight, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update, render: render });
     var cursors = null;
     var camera = null;
     var model = null;
@@ -37,6 +38,8 @@ function(Phaser, Camera, Model)
     var decorCubes = [];
 
     var cameraPos;
+
+    var geometry = null;
 
     function preload()
     {
@@ -64,9 +67,13 @@ function(Phaser, Camera, Model)
 
         camera = Camera.getInstance();
 
+
+        geometry = new Phaser.Geometry(game, "car", null, null /* verts */, null /* indices */);
+        this.world.add(geometry);
+
         //game.add.image(0,0,"car");
 
-        var vertices = [];
+        /*var vertices = [];
         vertices.push(Vector.create([10, 10, -10]));
         vertices.push(Vector.create([10, 10, 10]));
         vertices.push(Vector.create([10, -10, 10]));
@@ -170,7 +177,7 @@ function(Phaser, Camera, Model)
         model = new Model(vertices, [0,1,2,3, 1,2,6,5, 0,3,7,4, 4,5,6,7, 0,1,5,4, 2,3,7,6], 4);
         model.setPosition(Vector.create([0,-50,0]));
         model.baseColor = [255, 255, 255];
-        models.push(model);
+        models.push(model);*/
 
         /*models.forEach(function(model){
             model.setRotation(Vector.create([Math.PI/4,Math.PI/4,0]));
