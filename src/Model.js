@@ -3,7 +3,7 @@ define(["Phaser", "Camera"],
     {
         var Model = function (vertices, indices, faceSize)
         {
-            this.faceSize = faceSize || 4;
+            this.faceSize = faceSize || 3;
             this.matrix = Matrix.I(4);
             this.graphics = game.add.graphics(0, 0);
 
@@ -73,12 +73,14 @@ define(["Phaser", "Camera"],
 
         Model.prototype.sortFaces = function ()
         {
+            var camPos = this.vector3to4(Camera.getInstance().getPosition());
+
             this.faces.sort(function(a,b){
 
                 var aSum = Vector.Zero(3);
                 var bSum = Vector.Zero(3);
 
-                for(var i=0; i< a.length; i++)
+                for(var i=0; i< this.faceSize; i++)
                 {
                     aSum = aSum.add(a[i]);
                     bSum = bSum.add(b[i]);
@@ -86,13 +88,17 @@ define(["Phaser", "Camera"],
                 var aAvg = aSum.multiply(1/a.length);
                 var bAvg = bSum.multiply(1/b.length);
 
-                var camPos = Camera.getInstance().getPosition();
+                aAvg = this.vector3to4(aAvg);
+                aAvg = this.matrix.multiply(aAvg);
+
+                bAvg = this.vector3to4(bAvg);
+                bAvg = this.matrix.multiply(bAvg);
 
                 var aDist = aAvg.distanceFrom(camPos);
                 var bDist = bAvg.distanceFrom(camPos);
 
-                return aDist - bDist;
-            });
+                return bDist - aDist;
+            }.bind(this));
         };
 
         Model.prototype.updateGeometry = function ()
@@ -104,7 +110,7 @@ define(["Phaser", "Camera"],
             this.sortFaces();
 
             this.graphics.clear();
-            this.graphics.beginFill(0xFF0000, 1);
+            this.graphics.beginFill(Phaser.Color.toRGB(this.baseColor[0], this.baseColor[1], this.baseColor[2]), 1);
 
             this.faces.forEach(function(face){
 
@@ -134,8 +140,18 @@ define(["Phaser", "Camera"],
                     }
 
                     var vColor = Phaser.Color.toRGB(color[0], color[1], color[2]);
-                    this.graphics.beginFill(vColor, 1);
-                    this.graphics.lineTo(pos.elements[0], pos.elements[1]);
+                    //if(pos.elements[0] > -game.width/2 && pos.elements[0] < game.width/2 &&
+                    //   pos.elements[1] > -game.height/2 && pos.elements[1] < game.height/2)
+                    //{
+                        this.graphics.beginFill(vColor, 1);
+                        this.graphics.lineTo(pos.elements[0], pos.elements[1]);
+                    //}
+                    //else
+                    //{
+                    //    this.graphics.moveTo(pos.elements[0], pos.elements[1]);
+                    //}
+
+
                 }, this);
 
             }, this);

@@ -34,6 +34,7 @@ function(Phaser, Camera, Model)
     var cameraDist = 100;
 
     var models = [];
+    var decorCubes = [];
 
     var cameraPos;
 
@@ -55,15 +56,15 @@ function(Phaser, Camera, Model)
         //var worldHeight = 500000;
         game.world.setBounds(-game.width/2, -game.height/2, game.width/2, game.height/2);
 
-        game.stage.backgroundColor = '#eeeeee';
+        game.stage.backgroundColor = '#99aaff';
 
         cursors = game.input.keyboard.createCursorKeys();
 
         cameraPos = Vector.create([0,0,120]);
 
         camera = Camera.getInstance();
-        //camera.setPosition(0,10,0);
-        //camera.lookAt(Vector.create([0,10,0]), Vector.create([0,10,-10]));
+
+        //game.add.image(0,0,"car");
 
         var vertices = [];
         vertices.push(Vector.create([10, 10, -10]));
@@ -96,52 +97,84 @@ function(Phaser, Camera, Model)
         vertices.push(Vector.create([10, -10, 10]));
         vertices.push(Vector.create([10, 10, 10]));
 
-        model = new Model(vertices, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23]);
+        model = new Model(vertices, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23], 4);
+        model.setPosition(Vector.create([35,0,0]));
+        model.baseColor = [255, 0, 0];
         models.push(model);
+        decorCubes.push(model);
 
-        /*var vertices = [];
-        vertices.push(Vector.create([-10, 10, -10]));
-        vertices.push(Vector.create([-10, -10, -10]));
-        vertices.push(Vector.create([10, -10, -10]));
-        vertices.push(Vector.create([10, 10, -10]));
-        model = new Model(vertices);
+
+
+        var vertices = [];
+        vertices.push(Vector.create([10, 10, -10])); // R T B
+        vertices.push(Vector.create([10, 10, 10]));  // R T F
+        vertices.push(Vector.create([10, -10, 10])); // R B F
+        vertices.push(Vector.create([10, -10, -10]));// R B B
+        vertices.push(Vector.create([-10, 10, -10])); // L T B
+        vertices.push(Vector.create([-10, 10, 10]));  // L T F
+        vertices.push(Vector.create([-10, -10, 10])); // L B F
+        vertices.push(Vector.create([-10, -10, -10]));// L B B
+
+        model = new Model(vertices, [0,1,2,3, 1,2,6,5, 0,3,7,4, 4,5,6,7, 0,1,5,4, 2,3,7,6], 4);
+        model.setPosition(Vector.create([-35,0,0]));
+        model.baseColor = [0, 0, 255];
+        models.push(model);
+        decorCubes.push(model);
+
+
+        var platLength = 4000;
+        var wallHeight = 6;
+        var platWidth = 50;
+        var wallEdge = 58;
+
+        var vertices = [];
+        vertices.push(Vector.create([platWidth, 1, -platLength])); // R T B
+        vertices.push(Vector.create([platWidth, 1, 1]));  // R T F
+        vertices.push(Vector.create([platWidth, -1, 1])); // R B F
+        vertices.push(Vector.create([platWidth, -1, -platLength]));// R B B
+        vertices.push(Vector.create([-platWidth, 1, -platLength])); // L T B
+        vertices.push(Vector.create([-platWidth, 1, 1]));  // L T F
+        vertices.push(Vector.create([-platWidth, -1, 1])); // L B F
+        vertices.push(Vector.create([-platWidth, -1, -platLength]));// L B B
+
+        model = new Model(vertices, [0,1,2,3, 1,2,6,5, 0,3,7,4, 4,5,6,7, 0,1,5,4, 2,3,7,6], 4);
+        model.setPosition(Vector.create([0,-50,0]));
+        model.baseColor = [255, 255, 255];
         models.push(model);
 
         var vertices = [];
-        vertices.push(Vector.create([-10, -10, 10]));
-        vertices.push(Vector.create([-10, -10, -10]));
-        vertices.push(Vector.create([10, -10, -10]));
-        vertices.push(Vector.create([10, -10, 10]));
-        model = new Model(vertices);
+        vertices.push(Vector.create([wallEdge, wallHeight, -platLength])); // R T B
+        vertices.push(Vector.create([wallEdge, wallHeight, 1]));  // R T F
+        vertices.push(Vector.create([wallEdge, -1, 1])); // R B F
+        vertices.push(Vector.create([wallEdge, -1, -platLength]));// R B B
+        vertices.push(Vector.create([platWidth, wallHeight, -platLength])); // L T B
+        vertices.push(Vector.create([platWidth, wallHeight, 1]));  // L T F
+        vertices.push(Vector.create([platWidth, -1, 1])); // L B F
+        vertices.push(Vector.create([platWidth, -1, -platLength]));// L B B
+
+        model = new Model(vertices, [0,1,2,3, 1,2,6,5, 0,3,7,4, 4,5,6,7, 0,1,5,4, 2,3,7,6], 4);
+        model.setPosition(Vector.create([0,-50,0]));
+        model.baseColor = [255, 255, 255];
         models.push(model);
 
         var vertices = [];
-        vertices.push(Vector.create([-10, 10, 10]));
-        vertices.push(Vector.create([-10, 10, -10]));
-        vertices.push(Vector.create([10, 10, -10]));
-        vertices.push(Vector.create([10, 10, 10]));
-        model = new Model(vertices);
+        vertices.push(Vector.create([-wallEdge, wallHeight, -platLength])); // R T B
+        vertices.push(Vector.create([-wallEdge, wallHeight, 1]));  // R T F
+        vertices.push(Vector.create([-wallEdge, -1, 1])); // R B F
+        vertices.push(Vector.create([-wallEdge, -1, -platLength]));// R B B
+        vertices.push(Vector.create([-platWidth, wallHeight, -platLength])); // L T B
+        vertices.push(Vector.create([-platWidth, wallHeight, 1]));  // L T F
+        vertices.push(Vector.create([-platWidth, -1, 1])); // L B F
+        vertices.push(Vector.create([-platWidth, -1, -platLength]));// L B B
+
+        model = new Model(vertices, [0,1,2,3, 1,2,6,5, 0,3,7,4, 4,5,6,7, 0,1,5,4, 2,3,7,6], 4);
+        model.setPosition(Vector.create([0,-50,0]));
+        model.baseColor = [255, 255, 255];
         models.push(model);
 
-        var vertices = [];
-        vertices.push(Vector.create([-10, 10, -10]));
-        vertices.push(Vector.create([-10, 10, 10]));
-        vertices.push(Vector.create([-10, -10, 10]));
-        vertices.push(Vector.create([-10, -10, -10]));
-        model = new Model(vertices);
-        models.push(model);
-
-        var vertices = [];
-        vertices.push(Vector.create([-10, 10, 10]));
-        vertices.push(Vector.create([-10, -10, 10]));
-        vertices.push(Vector.create([10, -10, 10]));
-        vertices.push(Vector.create([10, 10, 10]));
-        model = new Model(vertices);
-        models.push(model);*/
-
-        models.forEach(function(model){
+        /*models.forEach(function(model){
             model.setRotation(Vector.create([Math.PI/4,Math.PI/4,0]));
-        });
+        });*/
 
         /*var graphics = game.add.graphics(0,0);
         graphics.beginFill(0x333333);
@@ -153,47 +186,85 @@ function(Phaser, Camera, Model)
         graphics.lineTo(5,-5);
 
         graphics.endFill();*/
+
+        //game.add.image(0,0,"crate");
     }
 
     function update()
     {
-        if(cursors.right.isDown)
+        var movement = false;
+        // Camera schemes:
+        // Movement - walk and strafe
+        // Rotation - rotate around the origin
+        if(movement)
         {
-            cameraAngle += 0.03;
+            var x = cameraPos.elements[0], y = cameraPos.elements[1], z = cameraPos.elements[2];
+            if(cursors.right.isDown)
+            {
+                x += 0.5;
+            }
+            if(cursors.left.isDown)
+            {
+                x -= 0.5;
+            }
+            if(cursors.up.isDown)
+            {
+                z -= 1.5;
+                cameraDist -= 0.5;
+            }
+            if(cursors.down.isDown)
+            {
+                z += 1.5;
+            }
+
+            cameraPos.elements[0] = x;
+            cameraPos.elements[1] = y;
+            cameraPos.elements[2] = z;
+            camera.lookAt(cameraPos, Vector.create([x,y,z-100]));
+
         }
-        else if(cursors.left.isDown)
+        else
         {
-            cameraAngle -= 0.03;
-        }
-        else if(cursors.up.isDown)
-        {
-            cameraDist += 0.5;
-        }
-        else if(cursors.down.isDown)
-        {
-            cameraDist -= 0.5;
+            if(cursors.right.isDown)
+            {
+                cameraAngle += 0.03;
+            }
+            else if(cursors.left.isDown)
+            {
+                cameraAngle -= 0.03;
+            }
+            else if(cursors.up.isDown)
+            {
+                cameraDist += 1.5;
+            }
+            else if(cursors.down.isDown)
+            {
+                cameraDist -= 1.5;
+            }
+
+
+            var x = Math.cos(cameraAngle)*cameraDist;
+            var y = Math.sin(cameraAngle)*cameraDist;
+
+            cameraPos.elements[0] = y;
+            cameraPos.elements[1] = 0;
+            cameraPos.elements[2] = x;
+
+            camera.lookAt(cameraPos, Vector.create([0,0,0]));
+
         }
 
-        var x = Math.cos(cameraAngle)*cameraDist;
-        var y = Math.sin(cameraAngle)*cameraDist;
 
-        cameraPos.elements[0] = y;
-        cameraPos.elements[1] = 0;
-        cameraPos.elements[2] = x;
-
-
-        //camera.lookAt(cameraPos, Vector.create([cameraPos.elements[0],cameraPos.elements[1],cameraPos.elements[2]+10]));
-        camera.lookAt(cameraPos, Vector.create([0,0,0]));
 
         models.forEach(function(model){
             model.update();
         });
 
-
-        /*models.forEach(function(model){
+        decorCubes.forEach(function(model){
             var t = game.time.elapsed/1000;
             model.setRotation(Vector.create([t/2,t,t/4]));
-        });*/
+        });
+
 
         camera.update();
     }
@@ -208,7 +279,7 @@ function(Phaser, Camera, Model)
             var aDist = aPos.distanceFrom(camPos);
             var bDist = bPos.distanceFrom(camPos);
 
-            return aDist - bDist;
+            return bDist - aDist;
         });
 
         models.forEach(function(model){
