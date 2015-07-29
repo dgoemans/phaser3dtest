@@ -1,17 +1,23 @@
 define(["Phaser", "Camera"],
     function (Phaser, Camera)
     {
-        var Model = function (vertices, indices, faceSize)
+        var Model = function (vertices, indices, uvs, key, frame)
         {
-            this.faceSize = faceSize || 3;
+            this.faceSize = 3;
             this.matrix = Matrix.I(4);
             this.graphics = game.add.graphics(0, 0);
 
             this.vertices = vertices;
             this.indices = indices;
+            this.uvs = uvs;
             this.faces = [];
             //this.baseColor = [200 + Math.random()*55, 100 + Math.random()*155, 100 + Math.random()*155];
             this.baseColor = [255, 0, 0];
+
+            this.geometry = new Phaser.Geometry(game, key, frame, null /* verts */, null /* indices */);
+            game.world.add(this.geometry);
+
+
             this.updateGeometry();
         };
 
@@ -60,14 +66,22 @@ define(["Phaser", "Camera"],
 
         Model.prototype.regenFaces = function ()
         {
+            var uvIndex = 0;
             this.faces = [];
-            var vertex = null;
+            var vertices = null;
+            var uvs = null;
             for (var i = 0; i < this.indices.length; i += this.faceSize)
             {
-                vertex = [];
+                uvs = [];
+                vertices = [];
                 for (var j = 0; j < this.faceSize; j++)
-                    vertex.push(this.vertices[this.indices[i + j]]);
-                this.faces.push(vertex);
+                {
+                    vertices.push(this.vertices[this.indices[i + j]]);
+                    uvs.push(this.uvs[uvIndex]);
+                    uvIndex++;
+                }
+
+                this.faces.push({ vertices: vertices, uvs: uvs });
             }
         };
 
@@ -82,11 +96,11 @@ define(["Phaser", "Camera"],
 
                 for(var i=0; i< this.faceSize; i++)
                 {
-                    aSum = aSum.add(a[i]);
-                    bSum = bSum.add(b[i]);
+                    aSum = aSum.add(a.vertices[i]);
+                    bSum = bSum.add(b.vertices[i]);
                 }
-                var aAvg = aSum.multiply(1/a.length);
-                var bAvg = bSum.multiply(1/b.length);
+                var aAvg = aSum.multiply(1/a.vertices.length);
+                var bAvg = bSum.multiply(1/b.vertices.length);
 
                 aAvg = this.vector3to4(aAvg);
                 aAvg = this.matrix.multiply(aAvg);
@@ -109,54 +123,46 @@ define(["Phaser", "Camera"],
 
             this.sortFaces();
 
-            this.graphics.clear();
-            this.graphics.beginFill(Phaser.Color.toRGB(this.baseColor[0], this.baseColor[1], this.baseColor[2]), 1);
+            var verts = [];
+            var uvs = [];
 
             this.faces.forEach(function(face){
 
-                var lightPos = Vector.create([20, 20, 30]);
-                var length = lightPos.modulus() + 0;
+                //var lightPos = Vector.create([20, 20, 30]);
+                //var length = lightPos.modulus() + 0;
 
-                var last = face[this.faceSize-1];
-                var pos = this.vector3to4(last);
-                pos = this.matrix.multiply(pos);
-                pos = Camera.getInstance().matrix.multiply(pos);
-                pos = this.normalizeProjectedVector(pos);
+                //var last = face.vertices[this.faceSize-1];
+                //var pos = this.vector3to4(last);
+                //pos = this.matrix.multiply(pos);
+                //pos = Camera.getInstance().matrix.multiply(pos);
+                //pos = this.normalizeProjectedVector(pos);
 
-                this.graphics.moveTo(pos.elements[0], pos.elements[1]);
+                face.uvs.forEach(function(uv){
+                    uvs.push(uv.elements[0]);
+                    uvs.push(uv.elements[1]);
+                }, this);
 
-                face.forEach(function(vertex){
+                face.vertices.forEach(function(vertex){
 
                     var pos = this.vector3to4(vertex);
                     pos = this.matrix.multiply(pos);
-                    var dist = pos.distanceFrom(this.vector3to4(lightPos));
+                    //var dist = pos.distanceFrom(this.vector3to4(lightPos));
                     pos = Camera.getInstance().matrix.multiply(pos);
                     pos = this.normalizeProjectedVector(pos);
 
-                    var color = this.baseColor.clone();
-                    for (var j = 0; j < color.length; j++)
-                    {
-                        color[j] = color[j] * 0.7 + color[j] * 0.3 * (1 - dist / length * dist / length);
-                    }
-
-                    var vColor = Phaser.Color.toRGB(color[0], color[1], color[2]);
-                    //if(pos.elements[0] > -game.width/2 && pos.elements[0] < game.width/2 &&
-                    //   pos.elements[1] > -game.height/2 && pos.elements[1] < game.height/2)
-                    //{
-                        this.graphics.beginFill(vColor, 1);
-                        this.graphics.lineTo(pos.elements[0], pos.elements[1]);
-                    //}
-                    //else
-                    //{
-                    //    this.graphics.moveTo(pos.elements[0], pos.elements[1]);
-                    //}
-
+                    verts.push(pos.elements[0]);
+                    verts.push(pos.elements[1]);
 
                 }, this);
 
             }, this);
 
-            this.graphics.endFill();
+            this.geometry.vertices = new PIXI.Float32Array(verts);
+            this.geometry.indices = new PIXI.Uint16Array(this.indices);
+            this.geometry.uvs = new PIXI.Float32Array(uvs);
+
+
+            //this.graphics.endFill();
         };
 
         Model.prototype.update = function ()

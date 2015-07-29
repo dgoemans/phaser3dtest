@@ -30,12 +30,12 @@ define(["Phaser"],
                 1, 1,
                 0, 1]);
 
-            this.verticies = new PIXI.Float32Array([0, 0,
+            this.vertices = new PIXI.Float32Array([0, 0,
                 100, 0,
                 100, 100,
                 0, 100]);
 
-            this.colors = new PIXI.Float32Array([1, 1, 1, 1]);
+            //this.colors = new PIXI.Float32Array([1, 1, 1, 1]);
 
             this.indices = new PIXI.Uint16Array([0, 1, 2, 0, 2, 3]);
 
@@ -82,16 +82,16 @@ define(["Phaser"],
             this._vertexBuffer = gl.createBuffer();
             this._indexBuffer = gl.createBuffer();
             this._uvBuffer = gl.createBuffer();
-            this._colorBuffer = gl.createBuffer();
+            //this._colorBuffer = gl.createBuffer();
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this._vertexBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, this.verticies, gl.DYNAMIC_DRAW);
+            gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.DYNAMIC_DRAW);
 
             gl.bindBuffer(gl.ARRAY_BUFFER, this._uvBuffer);
             gl.bufferData(gl.ARRAY_BUFFER, this.uvs, gl.STATIC_DRAW);
 
-            gl.bindBuffer(gl.ARRAY_BUFFER, this._colorBuffer);
-            gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.STATIC_DRAW);
+            //gl.bindBuffer(gl.ARRAY_BUFFER, this._colorBuffer);
+            //gl.bufferData(gl.ARRAY_BUFFER, this.colors, gl.STATIC_DRAW);
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices, gl.STATIC_DRAW);
@@ -119,7 +119,7 @@ define(["Phaser"],
             {
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, this._vertexBuffer);
-                gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.verticies);
+                gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices);
                 gl.vertexAttribPointer(shader.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
 
                 // update the uvs
@@ -149,7 +149,7 @@ define(["Phaser"],
 
                 this.dirty = false;
                 gl.bindBuffer(gl.ARRAY_BUFFER, this._vertexBuffer);
-                gl.bufferData(gl.ARRAY_BUFFER, this.verticies, gl.STATIC_DRAW);
+                gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STATIC_DRAW);
                 gl.vertexAttribPointer(shader.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
 
                 // update the uvs
@@ -174,14 +174,21 @@ define(["Phaser"],
                 gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices, gl.STATIC_DRAW);
 
             }
-            //console.log(gl.TRIANGLES)
-            //
-            //
-            gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
 
+            //gl.drawElements(gl.TRIANGLES, this.indices.length, gl.UNSIGNED_SHORT, 0);
+            gl.drawArrays(gl.TRIANGLES, 0, this.indices.length);
 
         };
 
+        PIXI.Geometry.prototype._inBounds = function (x0,y0)
+        {
+            return x0 < game.width/2 && x0 > -game.width/2 && y0 > -game.height/2 && y0 < game.height/2;
+        };
+
+        PIXI.Geometry.prototype._bound = function (x0,y0)
+        {
+            return {x: Math.min(Math.max(-game.width/2,x0),game.width/2), y: Math.min(Math.max(-game.height/2,y0),game.height/2)};
+        };
 
         PIXI.Geometry.prototype._renderCanvas = function (renderSession)
         {
@@ -200,51 +207,31 @@ define(["Phaser"],
 
             var geometry = this;
             // draw triangles!!
-            var verticies = geometry.verticies;
+            var vertices = geometry.vertices;
             var uvs = geometry.uvs;
+            var indices = geometry.indices;
 
-            var length = verticies.length / 2;
+            var length = indices.length/3;
             this.count++;
 
-            for (var i = 0; i < length - 2; i++)
+            for (var i = 0; i < indices.length; i+=3)
             {
                 // draw some triangles!
-                var index = i * 2;
+                /*var index1 = indices[i]*2;
+                var index2 = indices[i+1]*2;
+                var index3 = indices[i+2]*2;*/
+                var index1 = (i)*2;
+                var index2 = (i+1)*2;
+                var index3 = (i+2)*2;
 
-                var x0 = verticies[index], x1 = verticies[index + 2], x2 = verticies[index + 4];
-                var y0 = verticies[index + 1], y1 = verticies[index + 3], y2 = verticies[index + 5];
+                var x0 = vertices[index1], x1 = vertices[index2], x2 = vertices[index3];
+                var y0 = vertices[index1 + 1], y1 = vertices[index2 + 1], y2 = vertices[index3 + 1];
 
-                if (this.padding > 0)
-                {
-                    var centerX = (x0 + x1 + x2) / 3;
-                    var centerY = (y0 + y1 + y2) / 3;
+                var u0 = uvs[index1] * geometry.texture.width, u1 = uvs[index2] * geometry.texture.width, u2 = uvs[index3] * geometry.texture.width;
+                var v0 = uvs[index1 + 1] * geometry.texture.height, v1 = uvs[index2 + 1] * geometry.texture.height, v2 = uvs[index3 + 1]  * geometry.texture.height;
 
-                    var normX = x0 - centerX;
-                    var normY = y0 - centerY;
-
-                    var dist = Math.sqrt(normX * normX + normY * normY);
-                    x0 = centerX + (normX / dist) * (dist + 3);
-                    y0 = centerY + (normY / dist) * (dist + 3);
-
-                    //
-
-                    normX = x1 - centerX;
-                    normY = y1 - centerY;
-
-                    dist = Math.sqrt(normX * normX + normY * normY);
-                    x1 = centerX + (normX / dist) * (dist + 3);
-                    y1 = centerY + (normY / dist) * (dist + 3);
-
-                    normX = x2 - centerX;
-                    normY = y2 - centerY;
-
-                    dist = Math.sqrt(normX * normX + normY * normY);
-                    x2 = centerX + (normX / dist) * (dist + 3);
-                    y2 = centerY + (normY / dist) * (dist + 3);
-                }
-
-                var u0 = uvs[index] * geometry.texture.width, u1 = uvs[index + 2] * geometry.texture.width, u2 = uvs[index + 4] * geometry.texture.width;
-                var v0 = uvs[index + 1] * geometry.texture.height, v1 = uvs[index + 3] * geometry.texture.height, v2 = uvs[index + 5] * geometry.texture.height;
+                if( !this._inBounds(x0,y0) && !this._inBounds(x1,y1) && !this._inBounds(x2,y2) )
+                    continue;
 
                 context.save();
                 context.beginPath();
@@ -257,8 +244,18 @@ define(["Phaser"],
 
                 context.clip();
 
+                function toRGB(r, g, b)
+                {
+
+                    return (r << 16) | (g << 8) | b;
+
+                };
+
+                context.globalAlpha = 1;
+
+
                 // Compute matrix transform
-                var delta = u0 * v1 + v0 * u2 + u1 * v2 - v1 * u2 - v0 * u1 - u0 * v2;
+                var delta  = u0 * v1 + v0 * u2 + u1 * v2 - v1 * u2 - v0 * u1 - u0 * v2;
                 var deltaA = x0 * v1 + v0 * x2 + x1 * v2 - v1 * x2 - v0 * x1 - x0 * v2;
                 var deltaB = u0 * x1 + x0 * u2 + u1 * x2 - x1 * u2 - x0 * u1 - u0 * x2;
                 var deltaC = u0 * v1 * x2 + v0 * x1 * u2 + x0 * u1 * v2 - x0 * v1 * u2 - v0 * u1 * x2 - u0 * x1 * v2;
@@ -271,6 +268,26 @@ define(["Phaser"],
                     deltaC / delta, deltaF / delta);
 
                 context.drawImage(geometry.texture.baseTexture.source, 0, 0);
+
+                function decimalToHex(d) {
+                    var hex = Number(d).toString(16);
+                    hex = "00".substr(0, 2 - hex.length) + hex;
+                    return hex;
+                }
+
+                context.globalAlpha = 0.2;
+                context.fillStyle = '#ffffff';
+
+                /*var xMin = Math.min(x0,x1,x2);
+                var yMin = Math.min(y0,y1,y2);
+                context.fillRect(xMin,yMin,Math.max(x0,x1,x2) - xMin,Math.max(y0,y1,y2) - yMin);*/
+
+                context.fillRect(0, 0, geometry.texture.width, geometry.texture.height);
+                context.globalCompositeOperation = "destination-atop";
+
+                context.fillStyle = "#FFFFFF";
+                context.globalAlpha = 1.0;
+
                 context.restore();
             }
         };
@@ -286,9 +303,9 @@ define(["Phaser"],
         PIXI.Geometry.prototype.renderGeometryFlat = function (geometry)
         {
             var context = this.context;
-            var verticies = geometry.verticies;
+            var vertices = geometry.vertices;
 
-            var length = verticies.length / 2;
+            var length = vertices.length / 2;
             this.count++;
 
             context.beginPath();
@@ -297,8 +314,8 @@ define(["Phaser"],
                 // draw some triangles!
                 var index = i * 2;
 
-                var x0 = verticies[index], x1 = verticies[index + 2], x2 = verticies[index + 4];
-                var y0 = verticies[index + 1], y1 = verticies[index + 3], y2 = verticies[index + 5];
+                var x0 = vertices[index], x1 = vertices[index + 2], x2 = vertices[index + 4];
+                var y0 = vertices[index + 1], y1 = vertices[index + 3], y2 = vertices[index + 5];
 
                 context.moveTo(x0, y0);
                 context.lineTo(x1, y1);
@@ -332,12 +349,13 @@ define(["Phaser"],
             this.updateFrame = true;
         };
 
-        Phaser.Geometry = function (game, key, frame, vertices, indices)
+        Phaser.Geometry = function (game, key, frame, vertices, indices, uvs)
         {
             PIXI.Geometry.call(this, PIXI.TextureCache['__default']);
 
             if(vertices) this.vertices = vertices;
             if(indices) this.indices = indices;
+            if(uvs) this.uvs = uvs;
 
             Phaser.Component.Core.init.call(this, game, 0, 0, key, frame);
         };

@@ -51,6 +51,7 @@ function(Phaser, Camera, Model)
         game.load.image('corner', 'assets/corner.png');
         game.load.image('crate', 'assets/crate.png');
         game.load.image('smoke', 'assets/smoke.png');
+        game.load.image('foot', 'assets/foot.png');
     }
 
     function create()
@@ -68,8 +69,8 @@ function(Phaser, Camera, Model)
         camera = Camera.getInstance();
 
 
-        geometry = new Phaser.Geometry(game, "car", null, null /* verts */, null /* indices */);
-        this.world.add(geometry);
+        //geometry = new Phaser.Geometry(game, "car", null, null /* verts */, null /* indices */);
+        //this.world.add(geometry);
 
         //game.add.image(0,0,"car");
 
@@ -195,6 +196,90 @@ function(Phaser, Camera, Model)
         graphics.endFill();*/
 
         //game.add.image(0,0,"crate");
+
+        var vertices = [];
+        vertices.push(Vector.create([-10, -10, 10]));
+        vertices.push(Vector.create([10, -10, 10]));
+        vertices.push(Vector.create([10, 10, 10]));
+        vertices.push(Vector.create([-10, 10, 10]));
+        vertices.push(Vector.create([-10, -10, -10]));
+        vertices.push(Vector.create([10, -10, -10]));
+        vertices.push(Vector.create([10, 10, -10]));
+        vertices.push(Vector.create([-10, 10, -10]));
+
+        var uvs = [];
+        uvs.push(Vector.create([0, 0]));
+        uvs.push(Vector.create([1, 0]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([0, 1]));
+        uvs.push(Vector.create([0, 0]));
+
+        uvs.push(Vector.create([0, 0]));
+        uvs.push(Vector.create([1, 0]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([0, 1]));
+        uvs.push(Vector.create([0, 0]));
+
+        uvs.push(Vector.create([0, 0]));
+        uvs.push(Vector.create([1, 0]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([0, 1]));
+        uvs.push(Vector.create([0, 0]));
+
+        uvs.push(Vector.create([0, 0]));
+        uvs.push(Vector.create([1, 0]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([0, 1]));
+        uvs.push(Vector.create([0, 0]));
+
+        uvs.push(Vector.create([0, 0]));
+        uvs.push(Vector.create([1, 0]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([0, 1]));
+        uvs.push(Vector.create([0, 0]));
+
+        uvs.push(Vector.create([0, 0]));
+        uvs.push(Vector.create([1, 0]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([0, 1]));
+        uvs.push(Vector.create([0, 0]));
+
+        var indices = [0, 1, 2, 2, 3, 0,
+                3, 2, 6, 6, 7, 3,
+                7, 6, 5, 5, 4, 7,
+                4, 0, 3, 3, 7, 4,
+                0, 1, 5, 5, 4, 0,
+                1, 5, 6, 6, 2, 1 ];
+
+        model = new Model(vertices, indices, uvs, "road");
+        models.push(model);
+        decorCubes.push(model);
+
+
+        var vertices = [];
+        vertices.push(Vector.create([-10, -2, -500])); // R T B
+        vertices.push(Vector.create([10, -2, -500]));  // R T F
+        vertices.push(Vector.create([10, -2, 500])); // R B F
+        vertices.push(Vector.create([-10, -2, 500]));// R B B
+
+        var uvs = [];
+        uvs.push(Vector.create([0, 1]));
+        uvs.push(Vector.create([1, 1]));
+        uvs.push(Vector.create([1, 0]));
+
+        uvs.push(Vector.create([0, 1]));
+        uvs.push(Vector.create([1, 0]));
+        uvs.push(Vector.create([0, 0]));
+
+        model = new Model(vertices, [0,1,2,0,2,3], uvs, "grass");
+        model.setPosition(Vector.create([-35,0,0]));
+        models.push(model);
     }
 
     function update()
@@ -254,7 +339,7 @@ function(Phaser, Camera, Model)
             var y = Math.sin(cameraAngle)*cameraDist;
 
             cameraPos.elements[0] = y;
-            cameraPos.elements[1] = 0;
+            cameraPos.elements[1] = 20;
             cameraPos.elements[2] = x;
 
             camera.lookAt(cameraPos, Vector.create([0,0,0]));
