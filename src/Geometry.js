@@ -24,6 +24,8 @@ define(["Phaser"],
              */
             this.texture = texture;
 
+            this.z = 0;
+
             // set up the main bits..
             this.uvs = new PIXI.Float32Array([0, 0,
                 1, 0,
@@ -34,6 +36,9 @@ define(["Phaser"],
                 100, 0,
                 100, 100,
                 0, 100]);
+
+            this.lighting = [0, 0, 0, 0, 0];
+
 
             //this.colors = new PIXI.Float32Array([1, 1, 1, 1]);
 
@@ -46,6 +51,9 @@ define(["Phaser"],
              * @type Boolean
              */
             this.dirty = true;
+
+            this.XBOUND = game.width/2;
+            this.YBOUND = game.height/2;
         };
 
         // constructor
@@ -99,6 +107,9 @@ define(["Phaser"],
 
         PIXI.Geometry.prototype._renderGeometry = function (renderSession)
         {
+            if(!this.visible)
+                return;
+
             var gl = renderSession.gl;
             var projection = renderSession.projection,
                 offset = renderSession.offset,
@@ -182,16 +193,142 @@ define(["Phaser"],
 
         PIXI.Geometry.prototype._inBounds = function (x0,y0)
         {
-            return x0 < game.width/2 && x0 > -game.width/2 && y0 > -game.height/2 && y0 < game.height/2;
+            return x0 <= this.XBOUND && x0 >= -this.XBOUND && y0 >= -this.YBOUND && y0 <= this.YBOUND;
+        };
+
+        PIXI.Geometry.prototype._inBoundsX = function (x0)
+        {
+            return x0 <= this.XBOUND && x0 >= -this.XBOUND;
+        };
+
+        PIXI.Geometry.prototype._inBoundsY = function (y0)
+        {
+            return y0 >= -this.YBOUND && y0 <= this.YBOUND;
         };
 
         PIXI.Geometry.prototype._bound = function (x0,y0)
         {
-            return {x: Math.min(Math.max(-game.width/2,x0),game.width/2), y: Math.min(Math.max(-game.height/2,y0),game.height/2)};
+            return {x: Math.min(Math.max(-this.XBOUND,x0),this.XBOUND), y: Math.min(Math.max(-this.YBOUND,y0),this.YBOUND)};
+        };
+
+        Math.bound = function(val, min, max)
+        {
+            return Math.min(Math.max(val,min),max);
+        };
+
+        PIXI.Geometry.prototype.boundTriangle = function(x0, y0, x1, y1, x2, y2)
+        {
+            var obj = {};
+
+            // If it's in bounds, then swap with others to make further math 'cleaner'
+            if(this._inBounds(x0,y0))
+            {
+                if(!this._inBounds(x1,y1))
+                {
+                    var x = x0,y = y0;
+                    x0 = x1; y0 = y1;
+                    x1 = x; y1 = y;
+                }
+                else if(!this._inBounds(x2,y2))
+                {
+                    var x = x0,y = y0;
+                    x0 = x2; y0 = y2;
+                    x2 = x; y2 = y;
+                }
+            }
+
+            // do the bounds calc
+            if(!this._inBounds(x0,y0))
+            {
+                var xp, yp;
+                if(this._inBounds(x1,y1))
+                {
+                    xp = x1;
+                    yp = y1;
+                }
+                else if(this._inBounds(x2,y2))
+                {
+                    xp = x2;
+                    yp = y2;
+                }
+                else
+                {
+                    obj.x0 = x0;
+                    obj.y0 = y0;
+                    obj.x1 = x1;
+                    obj.y1 = y1;
+                    obj.x2 = x2;
+                    obj.y2 = y2;
+                    return obj;
+                }
+
+                var yr = y0;
+                var xr = x0;
+                // Y is out of bounds
+                if(this._inBoundsX(x0))
+                {
+
+                    if(y0 < -this.YBOUND)
+                    {
+                        yr = -this.YBOUND;
+                    }
+                    else
+                    {
+                        yr = this.YBOUND;
+                    }
+
+                    xr = (yr - yp)*(x0 - xp)/(y0 - yp) + xp;
+
+                }
+                else
+                {
+                    if(x0 < -this.XBOUND)
+                    {
+                        xr = -this.XBOUND;
+                    }
+                    else
+                    {
+                        xr = this.XBOUND;
+                    }
+
+                    yr = (xr - xp)*(y0 - yp)/(x0 - xp) + yp;
+                }
+
+
+
+                x0 = xr;
+                y0 = yr;
+            }
+
+            obj.x0 = x0;
+            obj.y0 = y0;
+            obj.x1 = x1;
+            obj.y1 = y1;
+            obj.x2 = x2;
+            obj.y2 = y2;
+
+            return obj;
+        };
+
+        PIXI.Geometry.prototype.inBoundsTri = function(x0,y0,x1,y1,x2,y2)
+        {
+            var in0 = this._inBounds(x0, y0);
+            var in1 = this._inBounds(x1, y1);
+            var in2 = this._inBounds(x2, y2);
+
+            return in0 && in1 && in2;
+        };
+
+        PIXI.Geometry.prototype.boundQuad = function()
+        {
+
         };
 
         PIXI.Geometry.prototype._renderCanvas = function (renderSession)
         {
+            if(!this.visible)
+                return;
+
             var context = renderSession.context;
 
             var transform = this.worldTransform;
@@ -218,20 +355,37 @@ define(["Phaser"],
             {
                 // draw some triangles!
                 /*var index1 = indices[i]*2;
-                var index2 = indices[i+1]*2;
-                var index3 = indices[i+2]*2;*/
-                var index1 = (i)*2;
-                var index2 = (i+1)*2;
-                var index3 = (i+2)*2;
+                 var index2 = indices[i+1]*2;
+                 var index3 = indices[i+2]*2;*/
+                var index1 = (i) * 2;
+                var index2 = (i + 1) * 2;
+                var index3 = (i + 2) * 2;
 
                 var x0 = vertices[index1], x1 = vertices[index2], x2 = vertices[index3];
                 var y0 = vertices[index1 + 1], y1 = vertices[index2 + 1], y2 = vertices[index3 + 1];
 
                 var u0 = uvs[index1] * geometry.texture.width, u1 = uvs[index2] * geometry.texture.width, u2 = uvs[index3] * geometry.texture.width;
-                var v0 = uvs[index1 + 1] * geometry.texture.height, v1 = uvs[index2 + 1] * geometry.texture.height, v2 = uvs[index3 + 1]  * geometry.texture.height;
+                var v0 = uvs[index1 + 1] * geometry.texture.height, v1 = uvs[index2 + 1] * geometry.texture.height, v2 = uvs[index3 + 1] * geometry.texture.height;
 
-                if( !this._inBounds(x0,y0) && !this._inBounds(x1,y1) && !this._inBounds(x2,y2) )
+
+
+                var in0 = this._inBounds(x0, y0);
+                var in1 = this._inBounds(x1, y1);
+                var in2 = this._inBounds(x2, y2);
+                if(!in0 && !in1 && !in2)
                     continue;
+
+                /*while (!this.inBoundsTri(x0,y0,x1,y1,x2,y2))
+                {
+                    var obj = this.boundTriangle(x0,y0,x1,y1,x2,y2);
+                    x0 = obj.x0;
+                    y0 = obj.y0;
+                    x1 = obj.x1;
+                    y1 = obj.y1;
+                    x2 = obj.x2;
+                    y2 = obj.y2;
+                }*/
+
 
                 context.save();
                 context.beginPath();
@@ -263,11 +417,17 @@ define(["Phaser"],
                 var deltaE = u0 * y1 + y0 * u2 + u1 * y2 - y1 * u2 - y0 * u1 - u0 * y2;
                 var deltaF = u0 * v1 * y2 + v0 * y1 * u2 + y0 * u1 * v2 - y0 * v1 * u2 - v0 * u1 * y2 - u0 * y1 * v2;
 
-                context.transform(deltaA / delta, deltaD / delta,
-                    deltaB / delta, deltaE / delta,
-                    deltaC / delta, deltaF / delta);
+                var scaleX = deltaA / delta;
+                var scaleY = deltaE / delta;
+                var skewX = deltaD / delta;
+                var skewY = deltaB / delta;
+                var transX = deltaC / delta;
+                var transY = deltaF / delta;
+
+                context.transform(scaleX, skewX, skewY, scaleY, transX, transY);
 
                 context.drawImage(geometry.texture.baseTexture.source, 0, 0);
+
 
                 function decimalToHex(d) {
                     var hex = Number(d).toString(16);
@@ -275,16 +435,17 @@ define(["Phaser"],
                     return hex;
                 }
 
-                context.globalAlpha = 0.2;
-                context.fillStyle = '#ffffff';
+                context.globalAlpha = 1.0;
+                var lighting = 255*this.lighting[index1];
+                var val = decimalToHex(lighting) + "";
+                context.fillStyle = '#' + val + val + val;
 
-                /*var xMin = Math.min(x0,x1,x2);
-                var yMin = Math.min(y0,y1,y2);
-                context.fillRect(xMin,yMin,Math.max(x0,x1,x2) - xMin,Math.max(y0,y1,y2) - yMin);*/
-
-                context.fillRect(0, 0, geometry.texture.width, geometry.texture.height);
                 context.globalCompositeOperation = "destination-atop";
 
+                context.fillRect(0, 0, geometry.texture.width, geometry.texture.height);
+
+
+                context.globalCompositeOperation = "destination-atop";
                 context.fillStyle = "#FFFFFF";
                 context.globalAlpha = 1.0;
 

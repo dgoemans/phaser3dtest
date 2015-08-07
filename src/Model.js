@@ -1,11 +1,12 @@
 define(["Phaser", "Camera"],
     function (Phaser, Camera)
     {
-        var Model = function (vertices, indices, uvs, key, frame)
+        var Model = function (parent, vertices, indices, uvs, key, frame)
         {
             this.faceSize = 3;
             this.matrix = Matrix.I(4);
             this.graphics = game.add.graphics(0, 0);
+            parent = parent || game.world;
 
             this.vertices = vertices;
             this.indices = indices;
@@ -15,12 +16,19 @@ define(["Phaser", "Camera"],
             this.baseColor = [255, 0, 0];
 
             this.geometry = new Phaser.Geometry(game, key, frame, null /* verts */, null /* indices */);
-            game.world.add(this.geometry);
+            parent.add(this.geometry);
 
 
             this.updateGeometry();
         };
 
+        Model.prototype = {
+            get z(){
+                var pos = this.getPosition();
+                var camPos = Camera.getInstance().getPosition();
+                return pos.distanceFrom(camPos);
+            }
+        };
 
         Model.prototype.constructor = Model;
 
@@ -85,33 +93,30 @@ define(["Phaser", "Camera"],
             }
         };
 
+        Model.prototype.faceDistTo = function(source, other)
+        {
+            var aSum = Vector.Zero(3);
+
+            for(var i=0; i< this.faceSize; i++)
+            {
+                aSum = aSum.add(source.vertices[i]);
+            }
+            var aAvg = aSum.multiply(1/source.vertices.length);
+
+            aAvg = this.vector3to4(aAvg);
+            aAvg = this.matrix.multiply(aAvg);
+
+            var aDist = aAvg.distanceFrom(other);
+
+            return aDist;
+        };
+
         Model.prototype.sortFaces = function ()
         {
             var camPos = this.vector3to4(Camera.getInstance().getPosition());
 
             this.faces.sort(function(a,b){
-
-                var aSum = Vector.Zero(3);
-                var bSum = Vector.Zero(3);
-
-                for(var i=0; i< this.faceSize; i++)
-                {
-                    aSum = aSum.add(a.vertices[i]);
-                    bSum = bSum.add(b.vertices[i]);
-                }
-                var aAvg = aSum.multiply(1/a.vertices.length);
-                var bAvg = bSum.multiply(1/b.vertices.length);
-
-                aAvg = this.vector3to4(aAvg);
-                aAvg = this.matrix.multiply(aAvg);
-
-                bAvg = this.vector3to4(bAvg);
-                bAvg = this.matrix.multiply(bAvg);
-
-                var aDist = aAvg.distanceFrom(camPos);
-                var bDist = bAvg.distanceFrom(camPos);
-
-                return bDist - aDist;
+                return this.faceDistTo(b, camPos) - this.faceDistTo(a, camPos);
             }.bind(this));
         };
 
@@ -122,20 +127,18 @@ define(["Phaser", "Camera"],
                 this.regenFaces();
 
             this.sortFaces();
-
+            //
             var verts = [];
             var uvs = [];
+            var lighting = [];
 
             this.faces.forEach(function(face){
 
-                //var lightPos = Vector.create([20, 20, 30]);
-                //var length = lightPos.modulus() + 0;
+                var lightPos = Vector.create([200, 200, 300]);
+                var length = 1500;
 
-                //var last = face.vertices[this.faceSize-1];
-                //var pos = this.vector3to4(last);
-                //pos = this.matrix.multiply(pos);
-                //pos = Camera.getInstance().matrix.multiply(pos);
-                //pos = this.normalizeProjectedVector(pos);
+                var light = this.faceDistTo(face, this.vector3to4(lightPos))/length;
+                face.lightDistance = (1 - light)*(1 - light);
 
                 face.uvs.forEach(function(uv){
                     uvs.push(uv.elements[0]);
@@ -146,12 +149,14 @@ define(["Phaser", "Camera"],
 
                     var pos = this.vector3to4(vertex);
                     pos = this.matrix.multiply(pos);
-                    //var dist = pos.distanceFrom(this.vector3to4(lightPos));
+
                     pos = Camera.getInstance().matrix.multiply(pos);
                     pos = this.normalizeProjectedVector(pos);
 
                     verts.push(pos.elements[0]);
                     verts.push(pos.elements[1]);
+
+                    lighting.push(face.lightDistance);
 
                 }, this);
 
@@ -159,7 +164,14 @@ define(["Phaser", "Camera"],
 
             this.geometry.vertices = new PIXI.Float32Array(verts);
             this.geometry.indices = new PIXI.Uint16Array(this.indices);
+            this.geometry.lighting = lighting;
             this.geometry.uvs = new PIXI.Float32Array(uvs);
+
+            var pos = this.getPosition();
+            var camPos = Camera.getInstance().getPosition();
+            var zPos = pos.distanceFrom(camPos);
+
+            this.geometry.z = zPos;
 
 
             //this.graphics.endFill();
@@ -167,11 +179,20 @@ define(["Phaser", "Camera"],
 
         Model.prototype.update = function ()
         {
+            var pos = this.getPosition();
+            var camPos = Camera.getInstance().getPosition();
+            if(camPos.elements[2] < pos.elements[2])
+            {
+                this.geometry.visible = false;
+            }
+            else
+                this.geometry.visible = true;
         };
 
         Model.prototype.render = function ()
         {
-            this.updateGeometry();
+            if(this.geometry.visible)
+                this.updateGeometry();
         };
 
         return Model;

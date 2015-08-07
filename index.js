@@ -1,11 +1,21 @@
 /**
  * Created by David on 29-Mar-15.
  */
-requirejs.config({
+require.config({
     baseUrl: 'src',
     paths: {
         Phaser: '../lib/phaser',
+        Debug: '../lib/phaser-debug',
         Sylvester: '../lib/sylvester'
+    },
+    shim: {
+        'Phaser' : {
+            exports: 'Phaser'
+        },
+        'Debug' : {
+            deps: ['Phaser'],
+            exports: 'Debug'
+        }
     }
 });
 
@@ -19,11 +29,14 @@ require(["Sylvester", "sylvester_tweaks"]);
 require(["Phaser",
     "Camera",
     "Model",
-    "Geometry"],
-function(Phaser, Camera, Model)
+    "Geometry",
+    "Debug"],
+function(Phaser, Camera, Model, Geometry, Debug)
 {
+    Phaser.Plugin.Debug = Debug;
     var gameElt = document.getElementById('game');
     game = new Phaser.Game(gameElt.clientWidth, gameElt.clientHeight, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update, render: render });
+
     var cursors = null;
     var camera = null;
     var model = null;
@@ -39,10 +52,13 @@ function(Phaser, Camera, Model)
 
     var cameraPos;
 
-    var geometry = null;
+    var modelsGroup = null;
 
     function preload()
     {
+        game.add.plugin(Phaser.Plugin.Debug);
+        modelsGroup = game.add.group();
+
         game.load.image('car', 'assets/car.png');
         game.load.image('tyre', 'assets/tyre.png');
         game.load.image('grass', 'assets/grass.png');
@@ -52,150 +68,20 @@ function(Phaser, Camera, Model)
         game.load.image('crate', 'assets/crate.png');
         game.load.image('smoke', 'assets/smoke.png');
         game.load.image('foot', 'assets/foot.png');
+        game.load.image('floor', 'assets/floor.png');
     }
 
     function create()
     {
-        //var worldWidth = 500000;
-        //var worldHeight = 500000;
         game.world.setBounds(-game.width/2, -game.height/2, game.width/2, game.height/2);
 
         game.stage.backgroundColor = '#99aaff';
 
         cursors = game.input.keyboard.createCursorKeys();
 
-        cameraPos = Vector.create([0,0,120]);
+        cameraPos = Vector.create([0,20,100]);
 
         camera = Camera.getInstance();
-
-
-        //geometry = new Phaser.Geometry(game, "car", null, null /* verts */, null /* indices */);
-        //this.world.add(geometry);
-
-        //game.add.image(0,0,"car");
-
-        /*var vertices = [];
-        vertices.push(Vector.create([10, 10, -10]));
-        vertices.push(Vector.create([10, 10, 10]));
-        vertices.push(Vector.create([10, -10, 10]));
-        vertices.push(Vector.create([10, -10, -10]));
-
-        vertices.push(Vector.create([-10, 10, -10]));
-        vertices.push(Vector.create([-10, -10, -10]));
-        vertices.push(Vector.create([10, -10, -10]));
-        vertices.push(Vector.create([10, 10, -10]));
-
-        vertices.push(Vector.create([-10, -10, 10]));
-        vertices.push(Vector.create([-10, -10, -10]));
-        vertices.push(Vector.create([10, -10, -10]));
-        vertices.push(Vector.create([10, -10, 10]));
-
-        vertices.push(Vector.create([-10, 10, 10]));
-        vertices.push(Vector.create([-10, 10, -10]));
-        vertices.push(Vector.create([10, 10, -10]));
-        vertices.push(Vector.create([10, 10, 10]));
-
-        vertices.push(Vector.create([-10, 10, -10]));
-        vertices.push(Vector.create([-10, 10, 10]));
-        vertices.push(Vector.create([-10, -10, 10]));
-        vertices.push(Vector.create([-10, -10, -10]));
-
-        vertices.push(Vector.create([-10, 10, 10]));
-        vertices.push(Vector.create([-10, -10, 10]));
-        vertices.push(Vector.create([10, -10, 10]));
-        vertices.push(Vector.create([10, 10, 10]));
-
-        model = new Model(vertices, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23], 4);
-        model.setPosition(Vector.create([35,0,0]));
-        model.baseColor = [255, 0, 0];
-        models.push(model);
-        decorCubes.push(model);
-
-
-
-        var vertices = [];
-        vertices.push(Vector.create([10, 10, -10])); // R T B
-        vertices.push(Vector.create([10, 10, 10]));  // R T F
-        vertices.push(Vector.create([10, -10, 10])); // R B F
-        vertices.push(Vector.create([10, -10, -10]));// R B B
-        vertices.push(Vector.create([-10, 10, -10])); // L T B
-        vertices.push(Vector.create([-10, 10, 10]));  // L T F
-        vertices.push(Vector.create([-10, -10, 10])); // L B F
-        vertices.push(Vector.create([-10, -10, -10]));// L B B
-
-        model = new Model(vertices, [0,1,2,3, 1,2,6,5, 0,3,7,4, 4,5,6,7, 0,1,5,4, 2,3,7,6], 4);
-        model.setPosition(Vector.create([-35,0,0]));
-        model.baseColor = [0, 0, 255];
-        models.push(model);
-        decorCubes.push(model);
-
-
-        var platLength = 4000;
-        var wallHeight = 6;
-        var platWidth = 50;
-        var wallEdge = 58;
-
-        var vertices = [];
-        vertices.push(Vector.create([platWidth, 1, -platLength])); // R T B
-        vertices.push(Vector.create([platWidth, 1, 1]));  // R T F
-        vertices.push(Vector.create([platWidth, -1, 1])); // R B F
-        vertices.push(Vector.create([platWidth, -1, -platLength]));// R B B
-        vertices.push(Vector.create([-platWidth, 1, -platLength])); // L T B
-        vertices.push(Vector.create([-platWidth, 1, 1]));  // L T F
-        vertices.push(Vector.create([-platWidth, -1, 1])); // L B F
-        vertices.push(Vector.create([-platWidth, -1, -platLength]));// L B B
-
-        model = new Model(vertices, [0,1,2,3, 1,2,6,5, 0,3,7,4, 4,5,6,7, 0,1,5,4, 2,3,7,6], 4);
-        model.setPosition(Vector.create([0,-50,0]));
-        model.baseColor = [255, 255, 255];
-        models.push(model);
-
-        var vertices = [];
-        vertices.push(Vector.create([wallEdge, wallHeight, -platLength])); // R T B
-        vertices.push(Vector.create([wallEdge, wallHeight, 1]));  // R T F
-        vertices.push(Vector.create([wallEdge, -1, 1])); // R B F
-        vertices.push(Vector.create([wallEdge, -1, -platLength]));// R B B
-        vertices.push(Vector.create([platWidth, wallHeight, -platLength])); // L T B
-        vertices.push(Vector.create([platWidth, wallHeight, 1]));  // L T F
-        vertices.push(Vector.create([platWidth, -1, 1])); // L B F
-        vertices.push(Vector.create([platWidth, -1, -platLength]));// L B B
-
-        model = new Model(vertices, [0,1,2,3, 1,2,6,5, 0,3,7,4, 4,5,6,7, 0,1,5,4, 2,3,7,6], 4);
-        model.setPosition(Vector.create([0,-50,0]));
-        model.baseColor = [255, 255, 255];
-        models.push(model);
-
-        var vertices = [];
-        vertices.push(Vector.create([-wallEdge, wallHeight, -platLength])); // R T B
-        vertices.push(Vector.create([-wallEdge, wallHeight, 1]));  // R T F
-        vertices.push(Vector.create([-wallEdge, -1, 1])); // R B F
-        vertices.push(Vector.create([-wallEdge, -1, -platLength]));// R B B
-        vertices.push(Vector.create([-platWidth, wallHeight, -platLength])); // L T B
-        vertices.push(Vector.create([-platWidth, wallHeight, 1]));  // L T F
-        vertices.push(Vector.create([-platWidth, -1, 1])); // L B F
-        vertices.push(Vector.create([-platWidth, -1, -platLength]));// L B B
-
-        model = new Model(vertices, [0,1,2,3, 1,2,6,5, 0,3,7,4, 4,5,6,7, 0,1,5,4, 2,3,7,6], 4);
-        model.setPosition(Vector.create([0,-50,0]));
-        model.baseColor = [255, 255, 255];
-        models.push(model);*/
-
-        /*models.forEach(function(model){
-            model.setRotation(Vector.create([Math.PI/4,Math.PI/4,0]));
-        });*/
-
-        /*var graphics = game.add.graphics(0,0);
-        graphics.beginFill(0x333333);
-
-        graphics.moveTo(5,-5);
-        graphics.lineTo(-5,-5);
-        graphics.lineTo(-5,5);
-        graphics.lineTo(5,5);
-        graphics.lineTo(5,-5);
-
-        graphics.endFill();*/
-
-        //game.add.image(0,0,"crate");
 
         var vertices = [];
         vertices.push(Vector.create([-10, -10, 10]));
@@ -257,16 +143,39 @@ function(Phaser, Camera, Model)
                 0, 1, 5, 5, 4, 0,
                 1, 5, 6, 6, 2, 1 ];
 
-        model = new Model(vertices, indices, uvs, "road");
+        model = new Model(modelsGroup, vertices, indices, uvs, "road");
+        model.setPosition(Vector.create([0,10,-1]));
         models.push(model);
         decorCubes.push(model);
 
 
+        var segments = 3;
+        var segLength = 800;
+
+        vertices = [];
+        vertices.push(Vector.create([-3, -3, segLength/2]));
+        vertices.push(Vector.create([3, -3, segLength/2]));
+        vertices.push(Vector.create([3, 3, segLength/2]));
+        vertices.push(Vector.create([-3, 3, segLength/2]));
+        vertices.push(Vector.create([-3, -3, -segLength/2]));
+        vertices.push(Vector.create([3, -3, -segLength/2]));
+        vertices.push(Vector.create([3, 3, -segLength/2]));
+        vertices.push(Vector.create([-3, 3, -segLength/2]));
+
+
+        for(var i=0; i<segments; i++)
+        {
+            model = new Model(modelsGroup, vertices, indices, uvs, "floor");
+            model.setPosition(Vector.create([-23,-7,-segLength*i - segLength/2]));
+            models.push(model);
+        }
+
+
         var vertices = [];
-        vertices.push(Vector.create([-10, -2, -500])); // R T B
-        vertices.push(Vector.create([10, -2, -500]));  // R T F
-        vertices.push(Vector.create([10, -2, 500])); // R B F
-        vertices.push(Vector.create([-10, -2, 500]));// R B B
+        vertices.push(Vector.create([-20, 0, -segLength/2])); // R T B
+        vertices.push(Vector.create([20, 0, -segLength/2]));  // R T F
+        vertices.push(Vector.create([20, 0, segLength/2])); // R B F
+        vertices.push(Vector.create([-20, 0, segLength/2]));// R B B
 
         var uvs = [];
         uvs.push(Vector.create([0, 1]));
@@ -277,14 +186,17 @@ function(Phaser, Camera, Model)
         uvs.push(Vector.create([1, 0]));
         uvs.push(Vector.create([0, 0]));
 
-        model = new Model(vertices, [0,1,2,0,2,3], uvs, "grass");
-        model.setPosition(Vector.create([-35,0,0]));
-        models.push(model);
+        for(var i=0; i<segments; i++)
+        {
+            model = new Model(modelsGroup, vertices, [0,1,2,0,2,3], uvs, "floor");
+            model.setPosition(Vector.create([0,-10,-segLength*i - segLength/2]));
+            models.push(model);
+        }
     }
 
     function update()
     {
-        var movement = false;
+        var movement = true;
         // Camera schemes:
         // Movement - walk and strafe
         // Rotation - rotate around the origin
@@ -302,7 +214,6 @@ function(Phaser, Camera, Model)
             if(cursors.up.isDown)
             {
                 z -= 1.5;
-                cameraDist -= 0.5;
             }
             if(cursors.down.isDown)
             {
@@ -312,7 +223,7 @@ function(Phaser, Camera, Model)
             cameraPos.elements[0] = x;
             cameraPos.elements[1] = y;
             cameraPos.elements[2] = z;
-            camera.lookAt(cameraPos, Vector.create([x,y,z-100]));
+            camera.lookAt(cameraPos, Vector.create([x,y-0.2,z-1]));
 
         }
         else
@@ -346,8 +257,6 @@ function(Phaser, Camera, Model)
 
         }
 
-
-
         models.forEach(function(model){
             model.update();
         });
@@ -355,6 +264,9 @@ function(Phaser, Camera, Model)
         decorCubes.forEach(function(model){
             var t = game.time.elapsed/1000;
             model.setRotation(Vector.create([t/2,t,t/4]));
+
+            t = game.time.totalElapsedSeconds();
+            model.setPosition(Vector.create([Math.sin(t)*10,Math.sin(t)*10,Math.sin(t)*10]));
         });
 
 
@@ -363,16 +275,7 @@ function(Phaser, Camera, Model)
 
     function render()
     {
-        models.sort(function(a,b){
-            var aPos = a.getPosition();
-            var bPos = b.getPosition();
-            var camPos = Camera.getInstance().getPosition();
-
-            var aDist = aPos.distanceFrom(camPos);
-            var bDist = bPos.distanceFrom(camPos);
-
-            return bDist - aDist;
-        });
+        modelsGroup.sort('z', Phaser.Group.SORT_DESCENDING);
 
         models.forEach(function(model){
             model.render();
