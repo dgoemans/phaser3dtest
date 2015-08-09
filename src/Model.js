@@ -156,10 +156,13 @@ define(["Phaser", "Camera", "glMatrix"],
                     uvs.push(uv[1]);
                 }, this);
 
+                var cameraPos = Camera.getInstance().getPosition();
+
                 face.vertices.forEach(function(vertex){
 
-                    var pos = GL.vec3.create();
-                    GL.vec3.transformMat4(pos, vertex, this.matrix);
+                    var pos = GL.vec3.clone(vertex);
+
+                    GL.vec3.transformMat4(pos, pos, this.matrix);
                     GL.vec3.transformMat4(pos, pos, Camera.getInstance().viewMatrix);
                     GL.vec3.transformMat4(pos, pos, Camera.getInstance().projectionMatrix);
                     //GL.vec3.transformMat4(pos,pos,Camera.getInstance().matrix);
