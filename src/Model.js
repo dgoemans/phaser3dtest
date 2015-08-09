@@ -49,12 +49,6 @@ define(["Phaser", "Camera", "glMatrix"],
 
         Model.prototype.normalizeProjectedVector = function (vec)
         {
-            if(vec[2] > 1)
-            {
-                //vec.elements[2] = -game.height/2 - vec.elements[2];
-                //vec[2] *= -1;
-            }
-
             vec[0] = vec[0]/(vec[2]);
             vec[1] = vec[1]/(vec[2]);
 
@@ -64,18 +58,9 @@ define(["Phaser", "Camera", "glMatrix"],
             return vec;
         };
 
-        Model.prototype.vector3to4 = function (vec)
-        {
-            var vec4 = GL.vec3.clone(vec);
-            vec4.push(1);
-            return vec4;
-        };
-
         Phaser.Color.toRGB = function (r, g, b)
         {
-
             return (r << 16) | (g << 8) | b;
-
         };
 
         Model.prototype.regenFaces = function ()
@@ -139,7 +124,7 @@ define(["Phaser", "Camera", "glMatrix"],
             var uvs = [];
             var lighting = [];
 
-            var mat = GL.mat4.create();
+            //var mat = GL.mat4.create();
             //GL.mat4.multiply(mat, this.matrix, Camera.getInstance().viewMatrix);
             //GL.mat4.multiply(mat, mat, Camera.getInstance().projectionMatrix);
 
@@ -163,9 +148,13 @@ define(["Phaser", "Camera", "glMatrix"],
                     var pos = GL.vec3.clone(vertex);
 
                     GL.vec3.transformMat4(pos, pos, this.matrix);
+
+                    if(pos[2] < cameraPos[2])
+                        pos[2] = cameraPos[2] + 1;
+
                     GL.vec3.transformMat4(pos, pos, Camera.getInstance().viewMatrix);
                     GL.vec3.transformMat4(pos, pos, Camera.getInstance().projectionMatrix);
-                    //GL.vec3.transformMat4(pos,pos,Camera.getInstance().matrix);
+                    //GL.vec3.transformMat4(pos,pos,mat);
                     pos = this.normalizeProjectedVector(pos);
 
                     verts.push(pos[0]);

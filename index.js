@@ -42,11 +42,11 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
     game = new Phaser.Game(gameElt.clientWidth, gameElt.clientHeight, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update, render: render });
 
     var cubesOn = false;
-    var wallsOn = false;
+    var wallsOn = true;
     var floorOn = true;
 
-    var segments = 1;
-    var segLength = 50;
+    var segments = 10;
+    var segLength = 500;
     var wallSize = 3;
     var runwayWidth = 10;
     var runwayY = 0;
@@ -91,8 +91,8 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
 
         cursors = game.input.keyboard.createCursorKeys();
 
-        cameraPos = GL.vec3.fromValues(0,20,0);
-        lookAtPos = GL.vec3.fromValues(0,20,-10);
+        cameraPos = GL.vec3.fromValues(0,20,50);
+        lookAtPos = GL.vec3.fromValues(0,0,0);
 
         camera = Camera.getInstance();
 
@@ -253,7 +253,7 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
             }
 
             GL.vec3.set(cameraPos, x,y,z);
-            GL.vec3.set(lookAtPos, x, 0, z-20);
+            GL.vec3.set(lookAtPos, x, y, z-20);
 
             camera.lookAt(cameraPos, lookAtPos);
             //camera.setPosition(cameraPos);

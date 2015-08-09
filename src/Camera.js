@@ -16,14 +16,19 @@ define(["Phaser", "glMatrix"],
         Camera.prototype.createPerspectiveMatrix = function()
         {
             var aspect = game.width/game.height;
-            var zNear = 0.01;
+            var zNear = 1;
             var zFar = 1000;
             GL.mat4.perspective(this.projectionMatrix, this.fov, aspect, zNear, zFar);
         };
 
         Camera.prototype.update = function ()
         {
+            //GL.mat4.transpose(this.projectionMatrix,this.projectionMatrix);
+        };
 
+        Camera.prototype.updateMatrix = function()
+        {
+            //GL.mat4.invert(this.viewMatrix,this.viewMatrix);
         };
 
         Camera.prototype.setPosition = function(vec)
@@ -41,6 +46,7 @@ define(["Phaser", "glMatrix"],
         Camera.prototype.lookAt = function (eye, target) {
 
             GL.mat4.lookAt(this.viewMatrix, eye, target, this.up);
+            this.updateMatrix();
         };
 
 
