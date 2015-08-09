@@ -348,15 +348,11 @@ define(["Phaser"],
             var uvs = geometry.uvs;
             var indices = geometry.indices;
 
-            var length = indices.length/3;
             this.count++;
 
             for (var i = 0; i < indices.length; i+=3)
             {
                 // draw some triangles!
-                /*var index1 = indices[i]*2;
-                 var index2 = indices[i+1]*2;
-                 var index3 = indices[i+2]*2;*/
                 var index1 = (i) * 2;
                 var index2 = (i + 1) * 2;
                 var index3 = (i + 2) * 2;
@@ -375,118 +371,97 @@ define(["Phaser"],
                 if(!in0 && !in1 && !in2)
                     continue;
 
-                /*while (!this.inBoundsTri(x0,y0,x1,y1,x2,y2))
+                var bound = false;
+                if(bound)
                 {
-                    var obj = this.boundTriangle(x0,y0,x1,y1,x2,y2);
-                    x0 = obj.x0;
-                    y0 = obj.y0;
-                    x1 = obj.x1;
-                    y1 = obj.y1;
-                    x2 = obj.x2;
-                    y2 = obj.y2;
-                }*/
+                    while (!this.inBoundsTri(x0, y0, x1, y1, x2, y2))
+                    {
+                        var obj = this.boundTriangle(x0, y0, x1, y1, x2, y2);
+                        x0 = obj.x0;
+                        y0 = obj.y0;
+                        x1 = obj.x1;
+                        y1 = obj.y1;
+                        x2 = obj.x2;
+                        y2 = obj.y2;
+                    }
+                }
 
 
-                context.save();
                 context.beginPath();
 
                 context.moveTo(x0, y0);
                 context.lineTo(x1, y1);
                 context.lineTo(x2, y2);
+                context.lineTo(x0, y0);
 
                 context.closePath();
 
-                context.clip();
 
-                function toRGB(r, g, b)
+                var texture = false;
+
+                if(texture)
+                {
+                    context.save();
+
+                    context.globalAlpha = 1;
+                    context.clip();
+
+                    // Compute matrix transform
+                    var delta  = u0 * v1 + v0 * u2 + u1 * v2 - v1 * u2 - v0 * u1 - u0 * v2;
+                    var deltaA = x0 * v1 + v0 * x2 + x1 * v2 - v1 * x2 - v0 * x1 - x0 * v2;
+                    var deltaB = u0 * x1 + x0 * u2 + u1 * x2 - x1 * u2 - x0 * u1 - u0 * x2;
+                    var deltaC = u0 * v1 * x2 + v0 * x1 * u2 + x0 * u1 * v2 - x0 * v1 * u2 - v0 * u1 * x2 - u0 * x1 * v2;
+                    var deltaD = y0 * v1 + v0 * y2 + y1 * v2 - v1 * y2 - v0 * y1 - y0 * v2;
+                    var deltaE = u0 * y1 + y0 * u2 + u1 * y2 - y1 * u2 - y0 * u1 - u0 * y2;
+                    var deltaF = u0 * v1 * y2 + v0 * y1 * u2 + y0 * u1 * v2 - y0 * v1 * u2 - v0 * u1 * y2 - u0 * y1 * v2;
+
+                    var scaleX = deltaA / delta;
+                    var scaleY = deltaE / delta;
+                    var skewX = deltaD / delta;
+                    var skewY = deltaB / delta;
+                    var transX = deltaC / delta;
+                    var transY = deltaF / delta;
+
+                    context.transform(scaleX, skewX, skewY, scaleY, transX, transY);
+
+                    context.drawImage(geometry.texture.baseTexture.source, 0, 0);
+
+                    context.restore();
+                }
+                else
                 {
 
-                    return (r << 16) | (g << 8) | b;
-
-                };
-
-                context.globalAlpha = 1;
-
-
-                // Compute matrix transform
-                var delta  = u0 * v1 + v0 * u2 + u1 * v2 - v1 * u2 - v0 * u1 - u0 * v2;
-                var deltaA = x0 * v1 + v0 * x2 + x1 * v2 - v1 * x2 - v0 * x1 - x0 * v2;
-                var deltaB = u0 * x1 + x0 * u2 + u1 * x2 - x1 * u2 - x0 * u1 - u0 * x2;
-                var deltaC = u0 * v1 * x2 + v0 * x1 * u2 + x0 * u1 * v2 - x0 * v1 * u2 - v0 * u1 * x2 - u0 * x1 * v2;
-                var deltaD = y0 * v1 + v0 * y2 + y1 * v2 - v1 * y2 - v0 * y1 - y0 * v2;
-                var deltaE = u0 * y1 + y0 * u2 + u1 * y2 - y1 * u2 - y0 * u1 - u0 * y2;
-                var deltaF = u0 * v1 * y2 + v0 * y1 * u2 + y0 * u1 * v2 - y0 * v1 * u2 - v0 * u1 * y2 - u0 * y1 * v2;
-
-                var scaleX = deltaA / delta;
-                var scaleY = deltaE / delta;
-                var skewX = deltaD / delta;
-                var skewY = deltaB / delta;
-                var transX = deltaC / delta;
-                var transY = deltaF / delta;
-
-                context.transform(scaleX, skewX, skewY, scaleY, transX, transY);
-
-                context.drawImage(geometry.texture.baseTexture.source, 0, 0);
-
-
-                function decimalToHex(d) {
-                    var hex = Number(d).toString(16);
-                    hex = "00".substr(0, 2 - hex.length) + hex;
-                    return hex;
+                    context.fillStyle="#FF0000";
+                    context.fill();
                 }
 
-                context.globalAlpha = 1.0;
-                var lighting = 255*this.lighting[index1];
-                var val = decimalToHex(lighting) + "";
-                context.fillStyle = '#' + val + val + val;
+                var lighting = false;
+                if(lighting)
+                {
+                    function decimalToHex(d) {
+                        var hex = Number(d).toString(16);
+                        hex = "00".substr(0, 2 - hex.length) + hex;
+                        return hex;
+                    }
 
-                context.globalCompositeOperation = "destination-atop";
+                    context.globalAlpha = 1.0;
+                    var lighting = 255*this.lighting[index1];
+                    var val = decimalToHex(lighting) + "";
+                    context.fillStyle = '#' + val + val + val;
 
-                context.fillRect(0, 0, geometry.texture.width, geometry.texture.height);
+                    context.globalCompositeOperation = "destination-atop";
+
+                    context.fillRect(0, 0, geometry.texture.width, geometry.texture.height);
 
 
-                context.globalCompositeOperation = "destination-atop";
-                context.fillStyle = "#FFFFFF";
-                context.globalAlpha = 1.0;
+                    context.globalCompositeOperation = "destination-atop";
+                    context.fillStyle = "#FFFFFF";
+                    context.globalAlpha = 1.0;
 
-                context.restore();
+                }
             }
         };
 
-
-        /**
-         * Renders a flat geometry
-         *
-         * @method renderGeometryFlat
-         * @param geometry {Geometry} The Geometry to render
-         * @private
-         */
-        PIXI.Geometry.prototype.renderGeometryFlat = function (geometry)
-        {
-            var context = this.context;
-            var vertices = geometry.vertices;
-
-            var length = vertices.length / 2;
-            this.count++;
-
-            context.beginPath();
-            for (var i = 1; i < length - 2; i++)
-            {
-                // draw some triangles!
-                var index = i * 2;
-
-                var x0 = vertices[index], x1 = vertices[index + 2], x2 = vertices[index + 4];
-                var y0 = vertices[index + 1], y1 = vertices[index + 3], y2 = vertices[index + 5];
-
-                context.moveTo(x0, y0);
-                context.lineTo(x1, y1);
-                context.lineTo(x2, y2);
-            }
-
-            context.fillStyle = "#FF0000";
-            context.fill();
-            context.closePath();
-        };
 
          PIXI.Geometry.prototype.setTexture = function(texture)
          {

@@ -20,9 +20,8 @@ define(["Phaser", "Sylvester"],
             var aspect = game.width/game.height;
             var zNear = 1;
             var zFar = 1000;
-            this.makePerspective(this.fov, aspect, zNear, zFar);
-            //this.projectionMatrix = Matrix.PerspectiveFovLH(this.fov, aspect, zNear, zFar);
-
+            this.projectionMatrix = this.makePerspective(this.fov, aspect, zNear, zFar);
+            //this.projectionMatrix = Matrix.I(4);
             this.projectionMatrix.transpose();
         };
 
@@ -38,14 +37,10 @@ define(["Phaser", "Sylvester"],
         Camera.prototype.setPosition = function(vec)
         {
             this.viewMatrix.setPosition(vec);
-            //this.viewMatrix.elements[0][3] = vec.elements[0];
-            //this.viewMatrix.elements[1][3] = vec.elements[1];
-            //this.viewMatrix.elements[2][3] = vec.elements[2];
-
             this.updateMatrix();
         };
 
-        Camera.prototype.getPosition = function(vec)
+        Camera.prototype.getPosition = function()
         {
             return this.viewMatrix.getPosition();
         };
@@ -53,7 +48,7 @@ define(["Phaser", "Sylvester"],
 
         Camera.prototype.makeFrustum = function ( left, right, bottom, top, near, far ) {
 
-            var te = this.projectionMatrix.elements;
+            var matrix = Matrix.I(4);
             var x = 2 * near / ( right - left );
             var y = 2 * near / ( top - bottom );
 
@@ -62,10 +57,12 @@ define(["Phaser", "Sylvester"],
             var c = - ( far + near ) / ( far - near );
             var d = - 2 * far * near / ( far - near );
 
-            te[0][0] = x;	te[1][0] = 0;	te[2][0] = a;	te[3][0] = 0;
-            te[0][1] = 0;	te[1][1] = y;	te[2][1] = b;	te[3][1] = 0;
-            te[0][2] = 0;	te[1][2] = 0;	te[2][2] = c;	te[3][2] = d;
-            te[0][3] = 0;	te[1][3] = 0;	te[2][3] = -1;	te[3][3] = 0;
+            matrix.elements[0][0] = x;	matrix.elements[1][0] = 0;	matrix.elements[2][0] = a;	matrix.elements[3][0] = 0;
+            matrix.elements[0][1] = 0;	matrix.elements[1][1] = y;	matrix.elements[2][1] = b;	matrix.elements[3][1] = 0;
+            matrix.elements[0][2] = 0;	matrix.elements[1][2] = 0;	matrix.elements[2][2] = c;	matrix.elements[3][2] = d;
+            matrix.elements[0][3] = 0;	matrix.elements[1][3] = 0;	matrix.elements[2][3] = -1;	matrix.elements[3][3] = 0;
+
+            return matrix;
         };
 
         Camera.prototype.makePerspective = function ( fov, aspect, near, far ) {
@@ -75,7 +72,7 @@ define(["Phaser", "Sylvester"],
             var xmin = ymin * aspect;
             var xmax = ymax * aspect;
 
-            this.makeFrustum( xmin, xmax, ymin, ymax, near, far );
+            return this.makeFrustum( xmin, xmax, ymin, ymax, near, far );
         };
 
 
@@ -86,8 +83,6 @@ define(["Phaser", "Sylvester"],
             var x = Vector.Zero(3);
             var y = Vector.Zero(3);
             var z = Vector.Zero(3);
-
-            var te = this.viewMatrix.elements;
 
             z = eye.subtract(target).toUnitVector();
 
@@ -104,9 +99,9 @@ define(["Phaser", "Sylvester"],
 
             y = z.cross(x);
 
-            te[0][0] = x.elements[0]; te[1][0] = y.elements[0]; te[2][0] = z.elements[0];
-            te[0][1] = x.elements[1]; te[1][1] = y.elements[1]; te[2][1] = z.elements[1];
-            te[0][2] = x.elements[2]; te[1][2] = y.elements[2]; te[2][2] = z.elements[2];
+            this.viewMatrix.elements[0][0] = x.elements[0]; this.viewMatrix.elements[1][0] = y.elements[0]; this.viewMatrix.elements[2][0] = z.elements[0];
+            this.viewMatrix.elements[0][1] = x.elements[1]; this.viewMatrix.elements[1][1] = y.elements[1]; this.viewMatrix.elements[2][1] = z.elements[1];
+            this.viewMatrix.elements[0][2] = x.elements[2]; this.viewMatrix.elements[1][2] = y.elements[2]; this.viewMatrix.elements[2][2] = z.elements[2];
 
             this.viewMatrix = this.viewMatrix.transpose();
 

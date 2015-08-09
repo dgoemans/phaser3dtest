@@ -52,9 +52,18 @@ define(["Phaser", "Camera"],
 
         Model.prototype.normalizeProjectedVector = function (vec)
         {
-            vec = vec.multiply(1 / vec.elements[2]);
-            vec = vec.multiply(game.width);
-            vec.elements[1] *= -1;
+            if(vec.elements[2] < 0)
+            {
+                //vec.elements[2] = -game.height/2 - vec.elements[2];
+                //vec.elements[1] *= -1;
+            }
+
+            vec.elements[0] = vec.elements[0]/Math.abs(vec.elements[2]);
+            vec.elements[1] = -vec.elements[1]/Math.abs(vec.elements[2]);
+
+            vec.elements[0] *= game.width;
+            vec.elements[1] *= game.height;
+
             return vec;
         };
 
@@ -181,11 +190,11 @@ define(["Phaser", "Camera"],
         {
             var pos = this.getPosition();
             var camPos = Camera.getInstance().getPosition();
-            if(camPos.elements[2] < pos.elements[2])
-            {
-                this.geometry.visible = false;
-            }
-            else
+            //if(camPos.elements[2] < pos.elements[2])
+            //{
+            //    this.geometry.visible = false;
+            //}
+            //else
                 this.geometry.visible = true;
         };
 
