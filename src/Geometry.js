@@ -430,8 +430,13 @@ define(["Phaser"],
                 }
                 else
                 {
+                    //if(i % 2 === 0)
+                    //    context.fillStyle="#FF0000";
+                    //else
+                    //    context.fillStyle="#0000FF";
 
-                    context.fillStyle="#FF0000";
+                    context.fillStyle="#FFFFFF";
+                    context.stroke();
                     context.fill();
                 }
 

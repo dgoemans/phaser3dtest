@@ -1,10 +1,10 @@
-define(["Phaser", "Camera"],
-    function (Phaser, Camera)
+define(["Phaser", "Camera", "glMatrix"],
+    function (Phaser, Camera, GL)
     {
         var Model = function (parent, vertices, indices, uvs, key, frame)
         {
             this.faceSize = 3;
-            this.matrix = Matrix.I(4);
+            this.matrix = GL.mat4.create();
             this.graphics = game.add.graphics(0, 0);
             parent = parent || game.world;
 
@@ -12,8 +12,6 @@ define(["Phaser", "Camera"],
             this.indices = indices;
             this.uvs = uvs;
             this.faces = [];
-            //this.baseColor = [200 + Math.random()*55, 100 + Math.random()*155, 100 + Math.random()*155];
-            this.baseColor = [255, 0, 0];
 
             this.geometry = new Phaser.Geometry(game, key, frame, null /* verts */, null /* indices */);
             parent.add(this.geometry);
@@ -26,7 +24,7 @@ define(["Phaser", "Camera"],
             get z(){
                 var pos = this.getPosition();
                 var camPos = Camera.getInstance().getPosition();
-                return pos.distanceFrom(camPos);
+                return GL.vec3.distance(pos,camPos);
             }
         };
 
@@ -34,43 +32,42 @@ define(["Phaser", "Camera"],
 
         Model.prototype.setPosition = function (pos)
         {
-            this.matrix.setPosition(pos);
+            GL.mat4.setTranslation(this.matrix, pos);
         };
 
         Model.prototype.getPosition = function ()
         {
-            return this.matrix.getPosition();
+            return GL.mat4.getTranslation(this.matrix);
         };
 
-        Model.prototype.setRotation = function (euler)
+        Model.prototype.rotate = function (euler)
         {
-            var rotationX = Matrix.Rotation4X(euler.elements[0]);
-            var rotationY = Matrix.Rotation4Y(euler.elements[1]);
-            var rotationZ = Matrix.Rotation4Z(euler.elements[2]);
-            this.matrix = this.matrix.multiply(rotationZ.multiply((rotationY.multiply(rotationX))));
+            GL.mat4.rotateZ(this.matrix, this.matrix, euler[2]);
+            GL.mat4.rotateY(this.matrix, this.matrix, euler[1]);
+            GL.mat4.rotateX(this.matrix, this.matrix, euler[0]);
         };
 
         Model.prototype.normalizeProjectedVector = function (vec)
         {
-            if(vec.elements[2] < 0)
+            if(vec[2] > 1)
             {
                 //vec.elements[2] = -game.height/2 - vec.elements[2];
-                //vec.elements[1] *= -1;
+                //vec[2] *= -1;
             }
 
-            vec.elements[0] = vec.elements[0]/Math.abs(vec.elements[2]);
-            vec.elements[1] = -vec.elements[1]/Math.abs(vec.elements[2]);
+            vec[0] = vec[0]/(vec[2]);
+            vec[1] = vec[1]/(vec[2]);
 
-            vec.elements[0] *= game.width;
-            vec.elements[1] *= game.height;
+            vec[0] = vec[0]*game.width;// - game.width/2 + game.width;
+            vec[1] = vec[1]*game.height;// - game.height/2 + game.height;
 
             return vec;
         };
 
         Model.prototype.vector3to4 = function (vec)
         {
-            var vec4 = vec.dup();
-            vec4.elements.push(1);
+            var vec4 = GL.vec3.clone(vec);
+            vec4.push(1);
             return vec4;
         };
 
@@ -104,25 +101,26 @@ define(["Phaser", "Camera"],
 
         Model.prototype.faceDistTo = function(source, other)
         {
-            var aSum = Vector.Zero(3);
+            var aAvg = GL.vec3.create();
+            var aSum = GL.vec3.create();
 
             for(var i=0; i< this.faceSize; i++)
             {
-                aSum = aSum.add(source.vertices[i]);
+                GL.vec3.add(aSum, aSum,source.vertices[i]);
             }
-            var aAvg = aSum.multiply(1/source.vertices.length);
 
-            aAvg = this.vector3to4(aAvg);
-            aAvg = this.matrix.multiply(aAvg);
+            GL.vec3.scale(aAvg, aSum, 1/source.vertices.length);
 
-            var aDist = aAvg.distanceFrom(other);
+            GL.vec3.transformMat4(aAvg, aAvg, this.matrix);
+
+            var aDist = GL.vec3.distance(aAvg,other);
 
             return aDist;
         };
 
         Model.prototype.sortFaces = function ()
         {
-            var camPos = this.vector3to4(Camera.getInstance().getPosition());
+            var camPos = Camera.getInstance().getPosition();
 
             this.faces.sort(function(a,b){
                 return this.faceDistTo(b, camPos) - this.faceDistTo(a, camPos);
@@ -141,29 +139,34 @@ define(["Phaser", "Camera"],
             var uvs = [];
             var lighting = [];
 
+            var mat = GL.mat4.create();
+            //GL.mat4.multiply(mat, this.matrix, Camera.getInstance().viewMatrix);
+            //GL.mat4.multiply(mat, mat, Camera.getInstance().projectionMatrix);
+
             this.faces.forEach(function(face){
 
-                var lightPos = Vector.create([200, 200, 300]);
+                var lightPos = GL.vec3.fromValues(200, 200, 300);
                 var length = 1500;
 
-                var light = this.faceDistTo(face, this.vector3to4(lightPos))/length;
+                var light = this.faceDistTo(face, lightPos)/length;
                 face.lightDistance = (1 - light)*(1 - light);
 
                 face.uvs.forEach(function(uv){
-                    uvs.push(uv.elements[0]);
-                    uvs.push(uv.elements[1]);
+                    uvs.push(uv[0]);
+                    uvs.push(uv[1]);
                 }, this);
 
                 face.vertices.forEach(function(vertex){
 
-                    var pos = this.vector3to4(vertex);
-                    pos = this.matrix.multiply(pos);
-
-                    pos = Camera.getInstance().matrix.multiply(pos);
+                    var pos = GL.vec3.create();
+                    GL.vec3.transformMat4(pos, vertex, this.matrix);
+                    GL.vec3.transformMat4(pos, pos, Camera.getInstance().viewMatrix);
+                    GL.vec3.transformMat4(pos, pos, Camera.getInstance().projectionMatrix);
+                    //GL.vec3.transformMat4(pos,pos,Camera.getInstance().matrix);
                     pos = this.normalizeProjectedVector(pos);
 
-                    verts.push(pos.elements[0]);
-                    verts.push(pos.elements[1]);
+                    verts.push(pos[0]);
+                    verts.push(pos[1]);
 
                     lighting.push(face.lightDistance);
 
@@ -178,7 +181,7 @@ define(["Phaser", "Camera"],
 
             var pos = this.getPosition();
             var camPos = Camera.getInstance().getPosition();
-            var zPos = pos.distanceFrom(camPos);
+            var zPos = GL.vec3.distance(pos,camPos);
 
             this.geometry.z = zPos;
 
@@ -190,7 +193,7 @@ define(["Phaser", "Camera"],
         {
             var pos = this.getPosition();
             var camPos = Camera.getInstance().getPosition();
-            //if(camPos.elements[2] < pos.elements[2])
+            //if(camPos[2] < pos[2])
             //{
             //    this.geometry.visible = false;
             //}

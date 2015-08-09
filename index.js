@@ -6,7 +6,7 @@ require.config({
     paths: {
         Phaser: '../lib/phaser',
         Debug: '../lib/phaser-debug',
-        Sylvester: '../lib/sylvester'
+        glMatrix: '../lib/gl-matrix-min'
     },
     shim: {
         'Phaser' : {
@@ -15,7 +15,10 @@ require.config({
         'Debug' : {
             deps: ['Phaser'],
             exports: 'Debug'
-        }
+        }/*,
+        'glMatrix' : {
+            exports: 'glMatrix'
+        }*/
     }
 });
 
@@ -24,14 +27,15 @@ Array.prototype.clone = function() {
     return this.slice(0);
 };
 
-require(["Sylvester", "sylvester_tweaks"]);
+require(["glMatrix", "gl-matrix-tweaks"]);
 
 require(["Phaser",
     "Camera",
     "Model",
     "Geometry",
-    "Debug"],
-function(Phaser, Camera, Model, Geometry, Debug)
+    "Debug",
+    "glMatrix"],
+function(Phaser, Camera, Model, Geometry, Debug, GL)
 {
     Phaser.Plugin.Debug = Debug;
     var gameElt = document.getElementById('game');
@@ -41,12 +45,15 @@ function(Phaser, Camera, Model, Geometry, Debug)
     var wallsOn = false;
     var floorOn = true;
 
+    var segments = 1;
+    var segLength = 50;
+    var wallSize = 3;
+    var runwayWidth = 10;
+    var runwayY = 0;
+
     var cursors = null;
     var camera = null;
     var model = null;
-
-    var leftDown = false;
-    var rightDown = false;
 
     var cameraAngle = 0;
     var cameraDist = 100;
@@ -55,6 +62,7 @@ function(Phaser, Camera, Model, Geometry, Debug)
     var decorCubes = [];
 
     var cameraPos;
+    var lookAtPos;
 
     var modelsGroup = null;
 
@@ -83,67 +91,13 @@ function(Phaser, Camera, Model, Geometry, Debug)
 
         cursors = game.input.keyboard.createCursorKeys();
 
-        cameraPos = Vector.create([0,20,0]);
+        cameraPos = GL.vec3.fromValues(0,20,0);
+        lookAtPos = GL.vec3.fromValues(0,20,-10);
 
         camera = Camera.getInstance();
 
-        if(cubesOn)
+        if(cubesOn || wallsOn)
         {
-            var cubeSize = 10;
-
-            var vertices = [];
-            vertices.push(Vector.create([-cubeSize, -cubeSize, cubeSize]));
-            vertices.push(Vector.create([cubeSize, -cubeSize, cubeSize]));
-            vertices.push(Vector.create([cubeSize, cubeSize, cubeSize]));
-            vertices.push(Vector.create([-cubeSize, cubeSize, cubeSize]));
-            vertices.push(Vector.create([-cubeSize, -cubeSize, -cubeSize]));
-            vertices.push(Vector.create([cubeSize, -cubeSize, -cubeSize]));
-            vertices.push(Vector.create([cubeSize, cubeSize, -cubeSize]));
-            vertices.push(Vector.create([-cubeSize, cubeSize, -cubeSize]));
-
-            var uvs = [];
-            uvs.push(Vector.create([0, 0]));
-            uvs.push(Vector.create([1, 0]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([0, 1]));
-            uvs.push(Vector.create([0, 0]));
-
-            uvs.push(Vector.create([0, 0]));
-            uvs.push(Vector.create([1, 0]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([0, 1]));
-            uvs.push(Vector.create([0, 0]));
-
-            uvs.push(Vector.create([0, 0]));
-            uvs.push(Vector.create([1, 0]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([0, 1]));
-            uvs.push(Vector.create([0, 0]));
-
-            uvs.push(Vector.create([0, 0]));
-            uvs.push(Vector.create([1, 0]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([0, 1]));
-            uvs.push(Vector.create([0, 0]));
-
-            uvs.push(Vector.create([0, 0]));
-            uvs.push(Vector.create([1, 0]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([0, 1]));
-            uvs.push(Vector.create([0, 0]));
-
-            uvs.push(Vector.create([0, 0]));
-            uvs.push(Vector.create([1, 0]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([0, 1]));
-            uvs.push(Vector.create([0, 0]));
-
             var indices = [0, 1, 2, 2, 3, 0,
                 3, 2, 6, 6, 7, 3,
                 7, 6, 5, 5, 4, 7,
@@ -151,44 +105,94 @@ function(Phaser, Camera, Model, Geometry, Debug)
                 0, 1, 5, 5, 4, 0,
                 1, 5, 6, 6, 2, 1 ];
 
+            var uvs = [];
+            uvs.push(GL.vec2.fromValues(0, 0));
+            uvs.push(GL.vec2.fromValues(1, 0));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(0, 1));
+            uvs.push(GL.vec2.fromValues(0, 0));
+
+            uvs.push(GL.vec2.fromValues(0, 0));
+            uvs.push(GL.vec2.fromValues(1, 0));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(0, 1));
+            uvs.push(GL.vec2.fromValues(0, 0));
+
+            uvs.push(GL.vec2.fromValues(0, 0));
+            uvs.push(GL.vec2.fromValues(1, 0));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(0, 1));
+            uvs.push(GL.vec2.fromValues(0, 0));
+
+            uvs.push(GL.vec2.fromValues(0, 0));
+            uvs.push(GL.vec2.fromValues(1, 0));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(0, 1));
+            uvs.push(GL.vec2.fromValues(0, 0));
+
+            uvs.push(GL.vec2.fromValues(0, 0));
+            uvs.push(GL.vec2.fromValues(1, 0));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(0, 1));
+            uvs.push(GL.vec2.fromValues(0, 0));
+
+            uvs.push(GL.vec2.fromValues(0, 0));
+            uvs.push(GL.vec2.fromValues(1, 0));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(0, 1));
+            uvs.push(GL.vec2.fromValues(0, 0));
+        }
+
+
+        if(cubesOn)
+        {
+            var cubeSize = 10;
+
+            var vertices = [];
+            vertices.push(GL.vec3.fromValues(-cubeSize, -cubeSize, cubeSize));
+            vertices.push(GL.vec3.fromValues(cubeSize, -cubeSize, cubeSize));
+            vertices.push(GL.vec3.fromValues(cubeSize, cubeSize, cubeSize));
+            vertices.push(GL.vec3.fromValues(-cubeSize, cubeSize, cubeSize));
+            vertices.push(GL.vec3.fromValues(-cubeSize, -cubeSize, -cubeSize));
+            vertices.push(GL.vec3.fromValues(cubeSize, -cubeSize, -cubeSize));
+            vertices.push(GL.vec3.fromValues(cubeSize, cubeSize, -cubeSize));
+            vertices.push(GL.vec3.fromValues(-cubeSize, cubeSize, -cubeSize));
+
             model = new Model(modelsGroup, vertices, indices, uvs, "road");
-            model.setPosition(Vector.create([50,10,-500]));
+            model.setPosition(GL.vec3.fromValues(50,10,-500));
             models.push(model);
             decorCubes.push(model);
         }
 
-
-
-        var segments = 1;
-        var segLength = 500;
-        var wallSize = 3;
-        var runwayWidth = 10;
-        var runwayY = 0;
-        var xOffset = 0;
-
         if(wallsOn)
         {
             vertices = [];
-            vertices.push(Vector.create([-wallSize, -wallSize, segLength/2]));
-            vertices.push(Vector.create([wallSize, -wallSize, segLength/2]));
-            vertices.push(Vector.create([wallSize, wallSize, segLength/2]));
-            vertices.push(Vector.create([-wallSize, wallSize, segLength/2]));
-            vertices.push(Vector.create([-wallSize, -wallSize, -segLength/2]));
-            vertices.push(Vector.create([wallSize, -wallSize, -segLength/2]));
-            vertices.push(Vector.create([wallSize, wallSize, -segLength/2]));
-            vertices.push(Vector.create([-wallSize, wallSize, -segLength/2]));
+            vertices.push(GL.vec3.fromValues(-wallSize, -wallSize, segLength/2));
+            vertices.push(GL.vec3.fromValues(wallSize, -wallSize, segLength/2));
+            vertices.push(GL.vec3.fromValues(wallSize, wallSize, segLength/2));
+            vertices.push(GL.vec3.fromValues(-wallSize, wallSize, segLength/2));
+            vertices.push(GL.vec3.fromValues(-wallSize, -wallSize, -segLength/2));
+            vertices.push(GL.vec3.fromValues(wallSize, -wallSize, -segLength/2));
+            vertices.push(GL.vec3.fromValues(wallSize, wallSize, -segLength/2));
+            vertices.push(GL.vec3.fromValues(-wallSize, wallSize, -segLength/2));
 
             for(var i=0; i<segments; i++)
             {
                 model = new Model(modelsGroup, vertices, indices, uvs, "floor");
-                model.setPosition(Vector.create([xOffset-runwayWidth - wallSize,runwayY + wallSize,-segLength*i - segLength/2]));
+                model.setPosition(GL.vec3.fromValues(-runwayWidth - wallSize,runwayY + wallSize,-segLength*i - segLength/2));
                 models.push(model);
             }
 
             for(var i=0; i<segments; i++)
             {
                 model = new Model(modelsGroup, vertices, indices, uvs, "floor");
-                model.setPosition(Vector.create([xOffset+runwayWidth + wallSize,runwayY + wallSize,-segLength*i - segLength/2]));
+                model.setPosition(GL.vec3.fromValues(runwayWidth + wallSize,runwayY + wallSize,-segLength*i - segLength/2));
                 models.push(model);
             }
 
@@ -197,24 +201,24 @@ function(Phaser, Camera, Model, Geometry, Debug)
         if(floorOn)
         {
             var vertices = [];
-            vertices.push(Vector.create([-runwayWidth, 0, -segLength/2])); // R T B
-            vertices.push(Vector.create([runwayWidth, 0, -segLength/2]));  // R T F
-            vertices.push(Vector.create([runwayWidth, 0, segLength/2])); // R B F
-            vertices.push(Vector.create([-runwayWidth, 0, segLength/2]));// R B B
+            vertices.push(GL.vec3.fromValues(-runwayWidth, 0, -segLength/2)); // R T B
+            vertices.push(GL.vec3.fromValues(runwayWidth, 0, -segLength/2));  // R T F
+            vertices.push(GL.vec3.fromValues(runwayWidth, 0, segLength/2)); // R B F
+            vertices.push(GL.vec3.fromValues(-runwayWidth, 0, segLength/2));// R B B
 
             var uvs = [];
-            uvs.push(Vector.create([0, 1]));
-            uvs.push(Vector.create([1, 1]));
-            uvs.push(Vector.create([1, 0]));
+            uvs.push(GL.vec2.fromValues(0, 1));
+            uvs.push(GL.vec2.fromValues(1, 1));
+            uvs.push(GL.vec2.fromValues(1, 0));
 
-            uvs.push(Vector.create([0, 1]));
-            uvs.push(Vector.create([1, 0]));
-            uvs.push(Vector.create([0, 0]));
+            uvs.push(GL.vec2.fromValues(0, 1));
+            uvs.push(GL.vec2.fromValues(1, 0));
+            uvs.push(GL.vec2.fromValues(0, 0));
 
             for(var i=0; i<segments; i++)
             {
                 model = new Model(modelsGroup, vertices, [0,1,2,0,2,3], uvs, "floor");
-                model.setPosition(Vector.create([xOffset,runwayY,segLength*i - segLength/2]));
+                model.setPosition(GL.vec3.fromValues(0,runwayY,segLength*i - segLength/2));
                 models.push(model);
             }
         }
@@ -230,7 +234,7 @@ function(Phaser, Camera, Model, Geometry, Debug)
         // Rotation - rotate around the origin
         if(movement)
         {
-            var x = cameraPos.elements[0], y = cameraPos.elements[1], z = cameraPos.elements[2];
+            var x = cameraPos[0], y = cameraPos[1], z = cameraPos[2];
             if(cursors.right.isDown)
             {
                 x += 0.5;
@@ -248,10 +252,10 @@ function(Phaser, Camera, Model, Geometry, Debug)
                 z += 1.5;
             }
 
-            cameraPos.elements[0] = x;
-            cameraPos.elements[1] = y;
-            cameraPos.elements[2] = z;
-            camera.lookAt(cameraPos, Vector.create([x,y-0.0,z-50]));
+            GL.vec3.set(cameraPos, x,y,z);
+            GL.vec3.set(lookAtPos, x, 0, z-20);
+
+            camera.lookAt(cameraPos, lookAtPos);
             //camera.setPosition(cameraPos);
 
         }
@@ -278,12 +282,12 @@ function(Phaser, Camera, Model, Geometry, Debug)
             var x = Math.cos(cameraAngle)*cameraDist;
             var y = Math.sin(cameraAngle)*cameraDist;
 
-            cameraPos.elements[0] = y;
-            cameraPos.elements[1] = 20;
-            cameraPos.elements[2] = x;
+            cameraPos[0] = y;
+            cameraPos[1] = 20;
+            cameraPos[2] = x;
 
             //camera.setPosition(cameraPos);
-            camera.lookAt(cameraPos, Vector.create([0,0,0]));
+            camera.lookAt(cameraPos, GL.vec3.fromValues(0,0,0));
 
         }
 
@@ -293,10 +297,10 @@ function(Phaser, Camera, Model, Geometry, Debug)
 
         decorCubes.forEach(function(model){
             var t = game.time.elapsed/1000;
-            model.setRotation(Vector.create([t/2,t,t/4]));
+            model.rotate(GL.vec3.fromValues(t/2,t,t/4));
 
             //t = game.time.totalElapsedSeconds();
-            //model.setPosition(Vector.create([Math.sin(t)*10,Math.sin(t)*10,Math.sin(t)*10]));
+            //model.setPosition(GL.vec3.fromValues(Math.sin(t)*10,Math.sin(t)*10,Math.sin(t)*10));
         });
 
 
