@@ -124,6 +124,9 @@ define(["Phaser", "Camera", "glMatrix"],
             var uvs = [];
             var lighting = [];
 
+            var mat = GL.mat4.create();
+            GL.mat4.multiply(mat, Camera.getInstance().projectionMatrix, Camera.getInstance().viewMatrix);
+
             this.faces.forEach(function(face){
 
                 var lightPos = GL.vec3.fromValues(200, 200, 300);
@@ -137,9 +140,6 @@ define(["Phaser", "Camera", "glMatrix"],
                     uvs.push(uv[1]);
                 }, this);
 
-                var mat = GL.mat4.create();
-                GL.mat4.multiply(mat, Camera.getInstance().projectionMatrix, Camera.getInstance().viewMatrix);
-
                 var cameraPos = Camera.getInstance().getPosition();
 
                 face.vertices.forEach(function(vertex){
@@ -148,8 +148,8 @@ define(["Phaser", "Camera", "glMatrix"],
 
                     GL.vec3.transformMat4(pos, pos, this.matrix);
 
-                    if(pos[2] > cameraPos[2] - 10)
-                        pos[2] = cameraPos[2] - 10;
+                    if(pos[2] > cameraPos[2] - 11)
+                        pos[2] = cameraPos[2] - 11;
 
                     GL.vec3.transformMat4(pos, pos, mat);
 
@@ -180,12 +180,10 @@ define(["Phaser", "Camera", "glMatrix"],
         {
             var pos = this.getPosition();
             var camPos = Camera.getInstance().getPosition();
-            //if(camPos[2] < pos[2])
-            //{
-            //    this.geometry.visible = false;
-            //}
-            //else
-            //    this.geometry.visible = true;
+            if(Math.abs(camPos[2] - pos[2]) > 2000)
+                this.geometry.visible = false;
+            else
+                this.geometry.visible = true;
         };
 
         Model.prototype.render = function ()

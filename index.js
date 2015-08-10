@@ -54,6 +54,8 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
     var wallSize = 3;
     var runwayWidth = 10;
     var runwayY = 0;
+    var numCubes = 10;
+    var cubeDistance = 100;
 
     var cursors = null;
     var camera = null;
@@ -82,6 +84,10 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
         game.load.image('smoke', 'assets/smoke.png');
         game.load.image('foot', 'assets/foot.png');
         game.load.image('floor', 'assets/floor.png');
+        game.load.image('up', 'assets/up_arrow.png');
+        game.load.image('down', 'assets/down_arrow.png');
+        game.load.image('stop', 'assets/stop.png');
+
     }
 
     function create()
@@ -163,10 +169,13 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
             vertices.push(GL.vec3.fromValues(cubeSize, cubeSize, -cubeSize));
             vertices.push(GL.vec3.fromValues(-cubeSize, cubeSize, -cubeSize));
 
-            model = new Model(modelsGroup, vertices, indices, uvs, "road");
-            model.setPosition(GL.vec3.fromValues(0,50,-50));
-            models.push(model);
-            decorCubes.push(model);
+            for(var i=0; i<numCubes; i++)
+            {
+                model = new Model(modelsGroup, vertices, indices, uvs, "road");
+                model.setPosition(GL.vec3.fromValues(Math.cos(i/numCubes*Math.PI*2)*cubeDistance, Math.sin(i/numCubes*Math.PI*2)*cubeDistance,-250));
+                models.push(model);
+                decorCubes.push(model);
+            }
         }
 
         if(wallsOn)
@@ -222,8 +231,28 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
             }
         }
 
-
+        game.add.button(-game.width/2, -200, 'up', forward, this);
+        game.add.button(-game.width/2, 0, 'down', back, this);
+        game.add.button(-game.width/2, 200, 'stop', stopMoving, this);
     }
+
+
+    var autoMove = true;
+    var direction = -1;
+
+    function forward() {
+        direction = -1;
+        autoMove = true;
+    };
+
+    function stopMoving() {
+        autoMove = false;
+    };
+
+    function back() {
+        direction = 1;
+        autoMove = true;
+    };
 
     function update()
     {
@@ -250,11 +279,15 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
             {
                 z += 1.5;
             }
+            if(autoMove)
+            {
+                z += 1.5 * direction;
+            }
 
             GL.vec3.set(cameraPos, x,y,z);
             GL.vec3.set(lookAtPos, x, y, z-20);
 
-            camera.lookAt(cameraPos, lookAtPos);
+
             //camera.setPosition(cameraPos);
 
         }
@@ -285,10 +318,10 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
             cameraPos[1] = 20;
             cameraPos[2] = x;
 
-            //camera.setPosition(cameraPos);
-            camera.lookAt(cameraPos, GL.vec3.fromValues(0,0,0));
-
+            lookAtPos = GL.vec3.fromValues(0,0,0);
         }
+
+        camera.lookAt(cameraPos, lookAtPos);
 
         models.forEach(function(model){
             model.update();
