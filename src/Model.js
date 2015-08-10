@@ -47,17 +47,6 @@ define(["Phaser", "Camera", "glMatrix"],
             GL.mat4.rotateX(this.matrix, this.matrix, euler[0]);
         };
 
-        Model.prototype.normalizeProjectedVector = function (vec)
-        {
-            vec[0] = vec[0]/(vec[2]);
-            vec[1] = vec[1]/(vec[2]);
-
-            vec[0] = vec[0]*game.width;// - game.width/2 + game.width;
-            vec[1] = vec[1]*game.height;// - game.height/2 + game.height;
-
-            return vec;
-        };
-
         Phaser.Color.toRGB = function (r, g, b)
         {
             return (r << 16) | (g << 8) | b;
@@ -124,9 +113,6 @@ define(["Phaser", "Camera", "glMatrix"],
             var uvs = [];
             var lighting = [];
 
-            var mat = GL.mat4.create();
-            GL.mat4.multiply(mat, Camera.getInstance().projectionMatrix, Camera.getInstance().viewMatrix);
-
             this.faces.forEach(function(face){
 
                 var lightPos = GL.vec3.fromValues(200, 200, 300);
@@ -140,23 +126,11 @@ define(["Phaser", "Camera", "glMatrix"],
                     uvs.push(uv[1]);
                 }, this);
 
-                var cameraPos = Camera.getInstance().getPosition();
-
                 face.vertices.forEach(function(vertex){
 
-                    var pos = GL.vec3.clone(vertex);
-
-                    GL.vec3.transformMat4(pos, pos, this.matrix);
-
-                    if(pos[2] > cameraPos[2] - 11)
-                        pos[2] = cameraPos[2] - 11;
-
-                    GL.vec3.transformMat4(pos, pos, mat);
-
-                    pos = this.normalizeProjectedVector(pos);
-
-                    verts.push(pos[0]);
-                    verts.push(pos[1]);
+                    verts.push(vertex[0]);
+                    verts.push(vertex[1]);
+                    verts.push(vertex[2]);
 
                     lighting.push(face.lightDistance);
 
@@ -168,6 +142,7 @@ define(["Phaser", "Camera", "glMatrix"],
             this.geometry.indices = new PIXI.Uint16Array(this.indices);
             this.geometry.lighting = lighting;
             this.geometry.uvs = new PIXI.Float32Array(uvs);
+            this.geometry.matrix = this.matrix;
 
             var pos = this.getPosition();
             var camPos = Camera.getInstance().getPosition();

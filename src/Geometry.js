@@ -1,5 +1,5 @@
-define(["Phaser"],
-    function(Phaser)
+define(["Phaser", "Camera", "glMatrix", "ThreeDShader"],
+    function(Phaser, Camera, GL, ThreeDShader)
     {
         /**
          *
@@ -44,12 +44,7 @@ define(["Phaser"],
 
             this.indices = new PIXI.Uint16Array([0, 1, 2, 0, 2, 3]);
 
-            /**
-             * Whether the geometry is dirty or not
-             *
-             * @property dirty
-             * @type Boolean
-             */
+            this.matrix = GL.mat4.create();
             this.dirty = true;
 
             this.XBOUND = game.width/2;
@@ -71,7 +66,7 @@ define(["Phaser"],
             // init! init!
             if (!this._vertexBuffer)this._initWebGL(renderSession);
 
-            renderSession.shaderManager.setShader(renderSession.shaderManager.stripShader);
+            renderSession.shaderManager.setShader(this.shader);
 
             this._renderGeometry(renderSession);
 
@@ -103,6 +98,8 @@ define(["Phaser"],
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this._indexBuffer);
             gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, this.indices, gl.STATIC_DRAW);
+
+            this.shader = new ThreeDShader(gl);
         };
 
         PIXI.Geometry.prototype._renderGeometry = function (renderSession)
@@ -113,7 +110,7 @@ define(["Phaser"],
             var gl = renderSession.gl;
             var projection = renderSession.projection,
                 offset = renderSession.offset,
-                shader = renderSession.shaderManager.stripShader;
+                shader = this.shader;
 
 
             // gl.uniformMatrix4fv(shaderProgram.mvMatrixUniform, false, mat4Real);
@@ -121,8 +118,10 @@ define(["Phaser"],
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
             // set uniforms
-            gl.uniformMatrix3fv(shader.translationMatrix, false, this.worldTransform.toArray(true));
-            gl.uniform2f(shader.projectionVector, projection.x, -projection.y);
+            gl.uniformMatrix4fv(shader.model, false, this.matrix);
+            gl.uniformMatrix4fv(shader.projection, false, Camera.getInstance().projectionMatrix);
+            gl.uniformMatrix4fv(shader.view, false, Camera.getInstance().viewMatrix);
+
             gl.uniform2f(shader.offsetVector, -offset.x, -offset.y);
             gl.uniform1f(shader.alpha, this.worldAlpha);
 
@@ -131,7 +130,7 @@ define(["Phaser"],
 
                 gl.bindBuffer(gl.ARRAY_BUFFER, this._vertexBuffer);
                 gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.vertices);
-                gl.vertexAttribPointer(shader.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+                gl.vertexAttribPointer(shader.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
 
                 // update the uvs
                 gl.bindBuffer(gl.ARRAY_BUFFER, this._uvBuffer);
@@ -161,7 +160,7 @@ define(["Phaser"],
                 this.dirty = false;
                 gl.bindBuffer(gl.ARRAY_BUFFER, this._vertexBuffer);
                 gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STATIC_DRAW);
-                gl.vertexAttribPointer(shader.aVertexPosition, 2, gl.FLOAT, false, 0, 0);
+                gl.vertexAttribPointer(shader.aVertexPosition, 3, gl.FLOAT, false, 0, 0);
 
                 // update the uvs
                 gl.bindBuffer(gl.ARRAY_BUFFER, this._uvBuffer);
@@ -319,10 +318,18 @@ define(["Phaser"],
             return in0 && in1 && in2;
         };
 
-        PIXI.Geometry.prototype.boundQuad = function()
+        PIXI.Geometry.prototype.normalizeProjectedVector = function (vec)
         {
+            vec[0] = vec[0]/(vec[2]);
+            vec[1] = vec[1]/(vec[2]);
 
+            vec[0] = vec[0]*game.width;// - game.width/2 + game.width;
+            vec[1] = vec[1]*game.height;// - game.height/2 + game.height;
+
+            return vec;
         };
+
+
 
         PIXI.Geometry.prototype._renderCanvas = function (renderSession)
         {
@@ -348,21 +355,58 @@ define(["Phaser"],
             var uvs = geometry.uvs;
             var indices = geometry.indices;
 
+            var mat = GL.mat4.create();
+            GL.mat4.multiply(mat, Camera.getInstance().projectionMatrix, Camera.getInstance().viewMatrix);
+            var cameraPos = Camera.getInstance().getPosition();
+
             this.count++;
 
             for (var i = 0; i < indices.length; i+=3)
             {
                 // draw some triangles!
-                var index1 = (i) * 2;
-                var index2 = (i + 1) * 2;
-                var index3 = (i + 2) * 2;
+                var index1 = (i) * 3;
+                var index2 = (i + 1) * 3;
+                var index3 = (i + 2) * 3;
+
+                var uvIndex1 = (i)*2;
+                var uvIndex2 = (i+1)*2;
+                var uvIndex3 = (i+2)*2;
 
                 var x0 = vertices[index1], x1 = vertices[index2], x2 = vertices[index3];
                 var y0 = vertices[index1 + 1], y1 = vertices[index2 + 1], y2 = vertices[index3 + 1];
+                var z0 = vertices[index1 + 2], z1 = vertices[index2 + 2], z2 = vertices[index3 + 2];
 
-                var u0 = uvs[index1] * geometry.texture.width, u1 = uvs[index2] * geometry.texture.width, u2 = uvs[index3] * geometry.texture.width;
-                var v0 = uvs[index1 + 1] * geometry.texture.height, v1 = uvs[index2 + 1] * geometry.texture.height, v2 = uvs[index3 + 1] * geometry.texture.height;
+                var verts = [];
 
+                verts.push(GL.vec3.fromValues(x0, y0, z0));
+                verts.push(GL.vec3.fromValues(x1, y1, z1));
+                verts.push(GL.vec3.fromValues(x2, y2, z2));
+
+                for(var j=0; j<verts.length;j++)
+                {
+                    var pos = verts[j];
+                    GL.vec3.transformMat4(pos, pos, this.matrix);
+
+                    if(pos[2] > cameraPos[2] - 11)
+                        pos[2] = cameraPos[2] - 11;
+
+                    GL.vec3.transformMat4(pos, pos, mat);
+                    pos = this.normalizeProjectedVector(pos);
+
+                    verts[j] = pos;
+                }
+
+                x0 = verts[0][0];
+                y0 = verts[0][1];
+
+                x1 = verts[1][0];
+                y1 = verts[1][1];
+
+                x2 = verts[2][0];
+                y2 = verts[2][1];
+
+                var u0 = uvs[uvIndex1] * geometry.texture.width, u1 = uvs[uvIndex2] * geometry.texture.width, u2 = uvs[uvIndex3] * geometry.texture.width;
+                var v0 = uvs[uvIndex1 + 1] * geometry.texture.height, v1 = uvs[uvIndex2 + 1] * geometry.texture.height, v2 = uvs[uvIndex3 + 1] * geometry.texture.height;
 
 
                 var in0 = this._inBounds(x0, y0);

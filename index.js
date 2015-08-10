@@ -39,7 +39,7 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
 {
     Phaser.Plugin.Debug = Debug;
     var gameElt = document.getElementById('game');
-    game = new Phaser.Game(gameElt.clientWidth, gameElt.clientHeight, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update, render: render });
+    game = new Phaser.Game(gameElt.clientWidth, gameElt.clientHeight, Phaser.AUTO, 'game', { preload: preload, create: create, update: update, render: render });
 
     var cubesOn = true;
     var wallsOn = true;
@@ -237,7 +237,7 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
     }
 
 
-    var autoMove = true;
+    var autoMove = false;
     var direction = -1;
 
     function forward() {
