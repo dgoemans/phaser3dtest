@@ -124,10 +124,6 @@ define(["Phaser", "Camera", "glMatrix"],
             var uvs = [];
             var lighting = [];
 
-            //var mat = GL.mat4.create();
-            //GL.mat4.multiply(mat, this.matrix, Camera.getInstance().viewMatrix);
-            //GL.mat4.multiply(mat, mat, Camera.getInstance().projectionMatrix);
-
             this.faces.forEach(function(face){
 
                 var lightPos = GL.vec3.fromValues(200, 200, 300);
@@ -141,6 +137,9 @@ define(["Phaser", "Camera", "glMatrix"],
                     uvs.push(uv[1]);
                 }, this);
 
+                var mat = GL.mat4.create();
+                GL.mat4.multiply(mat, Camera.getInstance().projectionMatrix, Camera.getInstance().viewMatrix);
+
                 var cameraPos = Camera.getInstance().getPosition();
 
                 face.vertices.forEach(function(vertex){
@@ -149,12 +148,11 @@ define(["Phaser", "Camera", "glMatrix"],
 
                     GL.vec3.transformMat4(pos, pos, this.matrix);
 
-                    if(pos[2] < cameraPos[2])
-                        pos[2] = cameraPos[2] + 1;
+                    if(pos[2] > cameraPos[2] - 10)
+                        pos[2] = cameraPos[2] - 10;
 
-                    GL.vec3.transformMat4(pos, pos, Camera.getInstance().viewMatrix);
-                    GL.vec3.transformMat4(pos, pos, Camera.getInstance().projectionMatrix);
-                    //GL.vec3.transformMat4(pos,pos,mat);
+                    GL.vec3.transformMat4(pos, pos, mat);
+
                     pos = this.normalizeProjectedVector(pos);
 
                     verts.push(pos[0]);
@@ -176,9 +174,6 @@ define(["Phaser", "Camera", "glMatrix"],
             var zPos = GL.vec3.distance(pos,camPos);
 
             this.geometry.z = zPos;
-
-
-            //this.graphics.endFill();
         };
 
         Model.prototype.update = function ()
@@ -190,7 +185,7 @@ define(["Phaser", "Camera", "glMatrix"],
             //    this.geometry.visible = false;
             //}
             //else
-                this.geometry.visible = true;
+            //    this.geometry.visible = true;
         };
 
         Model.prototype.render = function ()

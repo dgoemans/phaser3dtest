@@ -41,9 +41,13 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
     var gameElt = document.getElementById('game');
     game = new Phaser.Game(gameElt.clientWidth, gameElt.clientHeight, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update, render: render });
 
-    var cubesOn = false;
+    var cubesOn = true;
     var wallsOn = true;
     var floorOn = true;
+
+    var cameraPos = GL.vec3.fromValues(0,20,0);
+    var lookAtPos = GL.vec3.fromValues(0,0,0);
+
 
     var segments = 10;
     var segLength = 500;
@@ -60,9 +64,6 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
 
     var models = [];
     var decorCubes = [];
-
-    var cameraPos;
-    var lookAtPos;
 
     var modelsGroup = null;
 
@@ -91,8 +92,6 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
 
         cursors = game.input.keyboard.createCursorKeys();
 
-        cameraPos = GL.vec3.fromValues(0,20,50);
-        lookAtPos = GL.vec3.fromValues(0,0,0);
 
         camera = Camera.getInstance();
 
@@ -165,7 +164,7 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
             vertices.push(GL.vec3.fromValues(-cubeSize, cubeSize, -cubeSize));
 
             model = new Model(modelsGroup, vertices, indices, uvs, "road");
-            model.setPosition(GL.vec3.fromValues(50,10,-500));
+            model.setPosition(GL.vec3.fromValues(0,50,-50));
             models.push(model);
             decorCubes.push(model);
         }
@@ -185,14 +184,14 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
             for(var i=0; i<segments; i++)
             {
                 model = new Model(modelsGroup, vertices, indices, uvs, "floor");
-                model.setPosition(GL.vec3.fromValues(-runwayWidth - wallSize,runwayY + wallSize,-segLength*i - segLength/2));
+                model.setPosition(GL.vec3.fromValues(-runwayWidth - wallSize,runwayY + wallSize,-segLength*i + segLength/2));
                 models.push(model);
             }
 
             for(var i=0; i<segments; i++)
             {
                 model = new Model(modelsGroup, vertices, indices, uvs, "floor");
-                model.setPosition(GL.vec3.fromValues(runwayWidth + wallSize,runwayY + wallSize,-segLength*i - segLength/2));
+                model.setPosition(GL.vec3.fromValues(runwayWidth + wallSize,runwayY + wallSize,-segLength*i + segLength/2));
                 models.push(model);
             }
 
@@ -218,7 +217,7 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
             for(var i=0; i<segments; i++)
             {
                 model = new Model(modelsGroup, vertices, [0,1,2,0,2,3], uvs, "floor");
-                model.setPosition(GL.vec3.fromValues(0,runwayY,segLength*i - segLength/2));
+                model.setPosition(GL.vec3.fromValues(0,runwayY,-segLength*i + segLength/2));
                 models.push(model);
             }
         }

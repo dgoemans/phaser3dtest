@@ -397,7 +397,7 @@ define(["Phaser"],
                 context.closePath();
 
 
-                var texture = false;
+                var texture = true;
 
                 if(texture)
                 {
