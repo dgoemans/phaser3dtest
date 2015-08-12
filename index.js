@@ -34,12 +34,13 @@ require(["Phaser",
     "Model",
     "Geometry",
     "Debug",
+    "RoadSection",
     "glMatrix"],
-function(Phaser, Camera, Model, Geometry, Debug, GL)
+function(Phaser, Camera, Model, Geometry, Debug, RoadSection, GL)
 {
     Phaser.Plugin.Debug = Debug;
     var gameElt = document.getElementById('game');
-    game = new Phaser.Game(gameElt.clientWidth, gameElt.clientHeight, Phaser.AUTO, 'game', { preload: preload, create: create, update: update, render: render });
+    game = new Phaser.Game(gameElt.clientWidth, gameElt.clientHeight, Phaser.CANVAS, 'game', { preload: preload, create: create, update: update, render: render });
 
     var cubesOn = true;
     var wallsOn = true;
@@ -48,18 +49,8 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
     var cameraPos = GL.vec3.fromValues(0,20,0);
     var lookAtPos = GL.vec3.fromValues(0,0,0);
 
-
-    var segments = 10;
-    var segLength = 500;
-    var wallSize = 3;
-    var runwayWidth = 10;
-    var runwayY = 0;
-    var numCubes = 10;
-    var cubeDistance = 100;
-
     var cursors = null;
     var camera = null;
-    var model = null;
 
     var cameraAngle = 0;
     var cameraDist = 100;
@@ -101,143 +92,16 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
 
         camera = Camera.getInstance();
 
-        if(cubesOn || wallsOn)
+        if(isMobileOrTablet())
         {
-            var indices = [0, 1, 2, 2, 3, 0,
-                3, 2, 6, 6, 7, 3,
-                7, 6, 5, 5, 4, 7,
-                4, 0, 3, 3, 7, 4,
-                0, 1, 5, 5, 4, 0,
-                1, 5, 6, 6, 2, 1 ];
-
-            var uvs = [];
-            uvs.push(GL.vec2.fromValues(0, 0));
-            uvs.push(GL.vec2.fromValues(1, 0));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(0, 1));
-            uvs.push(GL.vec2.fromValues(0, 0));
-
-            uvs.push(GL.vec2.fromValues(0, 0));
-            uvs.push(GL.vec2.fromValues(1, 0));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(0, 1));
-            uvs.push(GL.vec2.fromValues(0, 0));
-
-            uvs.push(GL.vec2.fromValues(0, 0));
-            uvs.push(GL.vec2.fromValues(1, 0));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(0, 1));
-            uvs.push(GL.vec2.fromValues(0, 0));
-
-            uvs.push(GL.vec2.fromValues(0, 0));
-            uvs.push(GL.vec2.fromValues(1, 0));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(0, 1));
-            uvs.push(GL.vec2.fromValues(0, 0));
-
-            uvs.push(GL.vec2.fromValues(0, 0));
-            uvs.push(GL.vec2.fromValues(1, 0));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(0, 1));
-            uvs.push(GL.vec2.fromValues(0, 0));
-
-            uvs.push(GL.vec2.fromValues(0, 0));
-            uvs.push(GL.vec2.fromValues(1, 0));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(0, 1));
-            uvs.push(GL.vec2.fromValues(0, 0));
+            game.add.button(-game.width/2, -200, 'up', forward, this);
+            game.add.button(-game.width/2, 0, 'down', back, this);
+            game.add.button(-game.width/2, 200, 'stop', stopMoving, this);
         }
-
-
-        if(cubesOn)
-        {
-            var cubeSize = 10;
-
-            var vertices = [];
-            vertices.push(GL.vec3.fromValues(-cubeSize, -cubeSize, cubeSize));
-            vertices.push(GL.vec3.fromValues(cubeSize, -cubeSize, cubeSize));
-            vertices.push(GL.vec3.fromValues(cubeSize, cubeSize, cubeSize));
-            vertices.push(GL.vec3.fromValues(-cubeSize, cubeSize, cubeSize));
-            vertices.push(GL.vec3.fromValues(-cubeSize, -cubeSize, -cubeSize));
-            vertices.push(GL.vec3.fromValues(cubeSize, -cubeSize, -cubeSize));
-            vertices.push(GL.vec3.fromValues(cubeSize, cubeSize, -cubeSize));
-            vertices.push(GL.vec3.fromValues(-cubeSize, cubeSize, -cubeSize));
-
-            for(var i=0; i<numCubes; i++)
-            {
-                model = new Model(modelsGroup, vertices, indices, uvs, "road");
-                model.setPosition(GL.vec3.fromValues(Math.cos(i/numCubes*Math.PI*2)*cubeDistance, Math.sin(i/numCubes*Math.PI*2)*cubeDistance,-250));
-                models.push(model);
-                decorCubes.push(model);
-            }
-        }
-
-        if(wallsOn)
-        {
-            vertices = [];
-            vertices.push(GL.vec3.fromValues(-wallSize, -wallSize, segLength/2));
-            vertices.push(GL.vec3.fromValues(wallSize, -wallSize, segLength/2));
-            vertices.push(GL.vec3.fromValues(wallSize, wallSize, segLength/2));
-            vertices.push(GL.vec3.fromValues(-wallSize, wallSize, segLength/2));
-            vertices.push(GL.vec3.fromValues(-wallSize, -wallSize, -segLength/2));
-            vertices.push(GL.vec3.fromValues(wallSize, -wallSize, -segLength/2));
-            vertices.push(GL.vec3.fromValues(wallSize, wallSize, -segLength/2));
-            vertices.push(GL.vec3.fromValues(-wallSize, wallSize, -segLength/2));
-
-            for(var i=0; i<segments; i++)
-            {
-                model = new Model(modelsGroup, vertices, indices, uvs, "floor");
-                model.setPosition(GL.vec3.fromValues(-runwayWidth - wallSize,runwayY + wallSize,-segLength*i + segLength/2));
-                models.push(model);
-            }
-
-            for(var i=0; i<segments; i++)
-            {
-                model = new Model(modelsGroup, vertices, indices, uvs, "floor");
-                model.setPosition(GL.vec3.fromValues(runwayWidth + wallSize,runwayY + wallSize,-segLength*i + segLength/2));
-                models.push(model);
-            }
-
-        }
-
-        if(floorOn)
-        {
-            var vertices = [];
-            vertices.push(GL.vec3.fromValues(-runwayWidth, 0, -segLength/2)); // R T B
-            vertices.push(GL.vec3.fromValues(runwayWidth, 0, -segLength/2));  // R T F
-            vertices.push(GL.vec3.fromValues(runwayWidth, 0, segLength/2)); // R B F
-            vertices.push(GL.vec3.fromValues(-runwayWidth, 0, segLength/2));// R B B
-
-            var uvs = [];
-            uvs.push(GL.vec2.fromValues(0, 1));
-            uvs.push(GL.vec2.fromValues(1, 1));
-            uvs.push(GL.vec2.fromValues(1, 0));
-
-            uvs.push(GL.vec2.fromValues(0, 1));
-            uvs.push(GL.vec2.fromValues(1, 0));
-            uvs.push(GL.vec2.fromValues(0, 0));
-
-            for(var i=0; i<segments; i++)
-            {
-                model = new Model(modelsGroup, vertices, [0,1,2,0,2,3], uvs, "floor");
-                model.setPosition(GL.vec3.fromValues(0,runwayY,-segLength*i + segLength/2));
-                models.push(model);
-            }
-        }
-
-        game.add.button(-game.width/2, -200, 'up', forward, this);
-        game.add.button(-game.width/2, 0, 'down', back, this);
-        game.add.button(-game.width/2, 200, 'stop', stopMoving, this);
     }
 
 
-    var autoMove = false;
+    var autoMove = true;
     var direction = -1;
 
     function forward() {
@@ -256,70 +120,41 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
 
     function update()
     {
-        var movement = true;
-        // Camera schemes:
-        // Movement - walk and strafe
-        // Rotation - rotate around the origin
-        if(movement)
+        var zSpeed = 10;
+
+        var x = lookAtPos[0], y = lookAtPos[1], z = lookAtPos[2];
+
+        if(cursors.up.isDown)
         {
-            var x = cameraPos[0], y = cameraPos[1], z = cameraPos[2];
-            if(cursors.right.isDown)
-            {
-                x += 0.5;
-            }
-            if(cursors.left.isDown)
-            {
-                x -= 0.5;
-            }
-            if(cursors.up.isDown)
-            {
-                z -= 1.5;
-            }
-            if(cursors.down.isDown)
-            {
-                z += 1.5;
-            }
-            if(autoMove)
-            {
-                z += 1.5 * direction;
-            }
-
-            GL.vec3.set(cameraPos, x,y,z);
-            GL.vec3.set(lookAtPos, x, y, z-20);
-
-
-            //camera.setPosition(cameraPos);
-
+            z -= zSpeed;
         }
-        else
+        if(cursors.down.isDown)
         {
-            if(cursors.right.isDown)
-            {
-                cameraAngle += 0.03;
-            }
-            else if(cursors.left.isDown)
-            {
-                cameraAngle -= 0.03;
-            }
-            else if(cursors.up.isDown)
-            {
-                cameraDist -= 1.5;
-            }
-            else if(cursors.down.isDown)
-            {
-                cameraDist += 1.5;
-            }
-
-
-            var x = Math.cos(cameraAngle)*cameraDist;
-            var y = Math.sin(cameraAngle)*cameraDist;
-
-            cameraPos[0] = y;
-            cameraPos[1] = 20;
-            cameraPos[2] = x;
-
-            lookAtPos = GL.vec3.fromValues(0,0,0);
+            z += zSpeed;
         }
+        if(autoMove)
+        {
+            z += zSpeed * direction;
+        }
+
+        if(cursors.right.isDown)
+        {
+            cameraAngle -= 0.03;
+        }
+        else if(cursors.left.isDown)
+        {
+            cameraAngle += 0.03;
+        }
+
+        var cameraVariance = Math.PI/8;
+        cameraAngle = Math.min(Math.max(cameraAngle,-cameraVariance),cameraVariance);
+
+        var offX = Math.sin(cameraAngle)*cameraDist;
+        var offY = Math.cos(cameraAngle)*cameraDist;
+
+        GL.vec3.set(cameraPos, x + offX, y + 25, z + offY);
+        GL.vec3.set(lookAtPos, x, y, z);
+
 
         camera.lookAt(cameraPos, lookAtPos);
 
@@ -335,8 +170,37 @@ function(Phaser, Camera, Model, Geometry, Debug, GL)
             //model.setPosition(GL.vec3.fromValues(Math.sin(t)*10,Math.sin(t)*10,Math.sin(t)*10));
         });
 
+        // While the camera is within ViewDist sections of the end
+        var viewDist = isMobileOrTablet() ? 5 : 20;
+
+        while(models.length === 0 || Math.abs(cameraPos[2] - models[models.length-1].z) < viewDist*RoadSection.segLength )
+        {
+            generateSegment();
+            if(cameraPos[2] < models[0].z)
+            {
+                var model = models.shift();
+                model.destroy();
+            }
+        }
 
         camera.update();
+    }
+
+    var currentSegY = 0;
+    var created = 0;
+
+    function generateSegment()
+    {
+        var gap = Math.random() < 0.1;
+        created++;
+        var last = models.length ? models[models.length-1] : null;
+        var z = (last ? last.z - RoadSection.segLength : 0);
+        if(gap)
+            z -= 100;
+        var jitter = Math.random() * 5;
+        var oldSegY = currentSegY;
+        currentSegY = (0.3*Math.sin(created/10*Math.PI*2) + 0.7 * Math.random())*15;
+        models.push(new RoadSection(modelsGroup,jitter,oldSegY,currentSegY, z));
     }
 
     function render()

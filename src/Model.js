@@ -5,7 +5,6 @@ define(["Phaser", "Camera", "glMatrix"],
         {
             this.faceSize = 3;
             this.matrix = GL.mat4.create();
-            this.graphics = game.add.graphics(0, 0);
             parent = parent || game.world;
 
             this.vertices = vertices;
@@ -165,6 +164,20 @@ define(["Phaser", "Camera", "glMatrix"],
         {
             if(this.geometry.visible)
                 this.updateGeometry();
+        };
+
+        Model.prototype.destroy = function ()
+        {
+            this.geometry.visible = false;
+            this.geometry.destroy();
+            this.matrix = GL.mat4.create();
+
+            this.vertices = null;
+            this.indices = null;
+            this.uvs = null;
+            this.faces = null;
+            this.geometry = null;
+
         };
 
         return Model;
